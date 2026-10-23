@@ -32,8 +32,11 @@ $id = (int) ($_POST["id"] ?? 0);
 $student_id =
     trim($_POST["student_id"] ?? "");
 
+$paymentTypeInput =
+    $_POST["payment_type"] ?? "";
+
 $payment_type =
-    trim($_POST["payment_type"] ?? "");
+    is_string($paymentTypeInput) ? trim($paymentTypeInput) : "";
 
 $amount =
     trim($_POST["amount"] ?? "");
@@ -68,6 +71,28 @@ if (
 
     exit();
 
+}
+
+// Only allow payment types configured by an administrator.
+$paymentTypeCheck = $conn->prepare(
+    "SELECT id FROM payment_types WHERE name = ?"
+);
+if (!$paymentTypeCheck) {
+    header("Location: index.php?error=database");
+    exit();
+}
+$paymentTypeCheck->bind_param("s", $payment_type);
+if (!$paymentTypeCheck->execute()) {
+    $paymentTypeCheck->close();
+    header("Location: index.php?error=database");
+    exit();
+}
+$paymentTypeResult = $paymentTypeCheck->get_result();
+$paymentTypeExists = $paymentTypeResult->num_rows > 0;
+$paymentTypeCheck->close();
+if (!$paymentTypeExists) {
+    header("Location: index.php?error=invalid_payment_type");
+    exit();
 }
 
 

@@ -13,7 +13,7 @@ require_once "../config/database.php";
 // Check if ID exists
 
 if (!isset($_GET["id"]) || !is_numeric($_GET["id"])) {
-    header("Location: index.php?success=error");
+    header("Location: index.php?error=invalid_id");
     exit();
 }
 
@@ -39,7 +39,9 @@ if ($stmt->execute()) {
 
     // Delete failed
 
-    header("Location: index.php?success=error");
+    $stmt->close();
+    $conn->close();
+    header("Location: index.php?error=delete_failed");
     exit();
 
 }

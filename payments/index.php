@@ -10,12 +10,25 @@ require_once "../config/database.php";
 
 /* GET ACTIVE STUDENTS */
 $studentsSql = "
-    SELECT id, student_id, fullname
+    SELECT id, student_id,
+           CONCAT_WS(' ', first_name, middle_name, last_name) AS fullname
     FROM students
     WHERE status = 'Active'
-    ORDER BY fullname ASC
+    ORDER BY last_name ASC, first_name ASC, middle_name ASC
 ";
 $studentsResult = $conn->query($studentsSql);
+
+$paymentTypesResult = $conn->query(
+    "SELECT name FROM payment_types ORDER BY name ASC"
+);
+if (!$paymentTypesResult) {
+    http_response_code(500);
+    exit("Unable to load payment types: " . htmlspecialchars($conn->error));
+}
+$paymentTypes = [];
+while ($paymentType = $paymentTypesResult->fetch_assoc()) {
+    $paymentTypes[] = $paymentType["name"];
+}
 
 /* GET PAYMENTS */
 $paymentsSql = "
@@ -30,7 +43,7 @@ $paymentsSql = "
         p.reference_no,
         p.created_at,
         s.student_id AS student_number,
-        s.fullname
+        CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name) AS fullname
     FROM payments p
     LEFT JOIN students s ON p.student_id = s.id
     ORDER BY p.id DESC
@@ -46,6 +59,8 @@ $paymentsResult = $conn->query($paymentsSql);
 <title>Payments - Online Resibo</title>
 
 <link rel="stylesheet" href="../adminlte/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="../assets/css/table-gridlines.css">
+<link rel="stylesheet" href="../assets/css/sweetalert2.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 
@@ -111,11 +126,35 @@ $paymentsResult = $conn->query($paymentsSql);
                     </a>
                 </li>
 
+                <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
+                <li class="nav-item">
+                    <a href="../programs/index.php" class="nav-link">
+                        <p>📚 &nbsp; Courses / Programs</p>
+                    </a>
+                </li>
+                <?php endif; ?>
+
+                <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
+                <li class="nav-item">
+                    <a href="../departments/index.php" class="nav-link">
+                        <p>🏢 &nbsp; Departments</p>
+                    </a>
+                </li>
+                <?php endif; ?>
+
                 <li class="nav-item">
                     <a href="index.php" class="nav-link active">
                         <p>💳 &nbsp; Payments</p>
                     </a>
                 </li>
+
+                <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
+                <li class="nav-item">
+                    <a href="../payment-types/index.php" class="nav-link">
+                        <p>🏷️ &nbsp; Payment Types</p>
+                    </a>
+                </li>
+                <?php endif; ?>
 
                 <li class="nav-item">
                     <a href="../receipts/index.php" class="nav-link">
@@ -232,12 +271,11 @@ $paymentsResult = $conn->query($paymentsSql);
 
                     <select name="payment_type" class="form-select" required>
                         <option value="">Select Payment Type</option>
-                        <option value="Tuition Fee">Tuition Fee</option>
-                        <option value="Miscellaneous">Miscellaneous</option>
-                        <option value="Laboratory Fee">Laboratory Fee</option>
-                        <option value="School Uniform">School Uniform</option>
-                        <option value="Books">Books</option>
-                        <option value="Other">Other</option>
+                        <?php foreach ($paymentTypes as $paymentType): ?>
+                            <option value="<?= htmlspecialchars($paymentType, ENT_QUOTES, "UTF-8") ?>">
+                                <?= htmlspecialchars($paymentType) ?>
+                            </option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
 
@@ -719,30 +757,11 @@ EDIT PAYMENT MODAL
                                 class="form-select"
                                 required
                             >
-
-                                <option value="Tuition Fee">
-                                    Tuition Fee
-                                </option>
-
-                                <option value="Miscellaneous">
-                                    Miscellaneous
-                                </option>
-
-                                <option value="Laboratory Fee">
-                                    Laboratory Fee
-                                </option>
-
-                                <option value="School Uniform">
-                                    School Uniform
-                                </option>
-
-                                <option value="Books">
-                                    Books
-                                </option>
-
-                                <option value="Other">
-                                    Other
-                                </option>
+                                <?php foreach ($paymentTypes as $paymentType): ?>
+                                    <option value="<?= htmlspecialchars($paymentType, ENT_QUOTES, "UTF-8") ?>">
+                                        <?= htmlspecialchars($paymentType) ?>
+                                    </option>
+                                <?php endforeach; ?>
 
                             </select>
 
@@ -1083,6 +1102,8 @@ document.addEventListener("DOMContentLoaded", function() {
             message = "Please complete all required fields.";
         } else if (error === "invalid_amount") {
             message = "Please enter a valid payment amount.";
+        } else if (error === "invalid_payment_type") {
+            message = "Please select an available payment type.";
         } else if (error === "student_not_found") {
             message = "The selected student was not found.";
         } else if (error === "database") {

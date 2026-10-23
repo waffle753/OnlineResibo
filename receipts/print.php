@@ -11,7 +11,8 @@ require_once "../config/database.php";
 $id = (int) ($_GET["id"] ?? 0);
 
 if ($id <= 0) {
-    die("Invalid receipt.");
+    header("Location: ../payments/index.php?error=payment_not_found");
+    exit();
 }
 
 $stmt = $conn->prepare("
@@ -24,7 +25,7 @@ $stmt = $conn->prepare("
         p.payment_method,
         p.status,
         s.student_id,
-        s.fullname
+        CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name) AS fullname
     FROM payments p
     LEFT JOIN students s ON p.student_id = s.id
     WHERE p.id = ?

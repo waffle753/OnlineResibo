@@ -9,45 +9,79 @@ if (!isset($_SESSION["user_id"])) {
 
 require_once "../config/database.php";
 
+$departmentsTableExists = $conn->query("SHOW TABLES LIKE 'departments'");
+if (!$departmentsTableExists || $departmentsTableExists->num_rows === 0) {
+    header("Location: index.php?error=department_missing");
+    exit();
+}
+
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     header("Location: add.php");
     exit();
 }
 
 $student_id = trim($_POST["student_id"] ?? "");
-$fullname = trim($_POST["fullname"] ?? "");
-$course = trim($_POST["course"] ?? "");
+$first_name = trim($_POST["first_name"] ?? "");
+$middle_name = trim($_POST["middle_name"] ?? "");
+$last_name = trim($_POST["last_name"] ?? "");
+$emailInput = $_POST["email"] ?? "";
+if (!is_string($emailInput)) {
+    header("Location: index.php?error=invalid_email");
+    exit();
+}
+$email = trim($emailInput);
+$program_id = filter_var($_POST["program_id"] ?? null, FILTER_VALIDATE_INT);
+$department_id = filter_var($_POST["department_id"] ?? null, FILTER_VALIDATE_INT);
 $year_level = trim($_POST["year_level"] ?? "");
 $status = $_POST["status"] ?? "Active";
 
 if (
     $student_id === "" ||
-    $fullname === "" ||
-    $course === "" ||
+    $first_name === "" ||
+    $last_name === "" ||
+    $program_id === false ||
+    $program_id === null ||
+    $program_id <= 0 ||
+    $department_id === false ||
+    $department_id === null ||
+    $department_id <= 0 ||
     $year_level === ""
 ) {
-    die("Please complete all required fields.");
+    header("Location: index.php?error=missing");
+    exit();
 }
 
 if (!in_array($status, ["Active", "Inactive"], true)) {
-    die("Invalid student status.");
+    header("Location: index.php?error=invalid_status");
+    exit();
+}
+
+if ($email !== "" && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+    header("Location: index.php?error=invalid_email");
+    exit();
 }
 
 $sql = "INSERT INTO students
-        (student_id, fullname, course, year_level, status)
-        VALUES (?, ?, ?, ?, ?)";
+        (student_id, first_name, middle_name, last_name, email, program_id, department_id, year_level, status)
+        VALUES (?, ?, NULLIF(?, ''), ?, NULLIF(?, ''), ?, ?, ?, ?)";
 
 $stmt = $conn->prepare($sql);
 
 if (!$stmt) {
-    die("Database error: " . $conn->error);
+    error_log("Unable to prepare student insert: " . $conn->error);
+    header("Location: index.php?error=database");
+    exit();
 }
 
 $stmt->bind_param(
-    "sssss",
+    "sssssiiss",
     $student_id,
-    $fullname,
-    $course,
+    $first_name,
+    $middle_name,
+    $last_name,
+    $email,
+    $program_id,
+    $department_id,
     $year_level,
     $status
 );
@@ -66,7 +100,8 @@ if ($stmt->errno === 1062) {
     $stmt->close();
     $conn->close();
 
-    die("Student ID already exists.");
+    header("Location: index.php?error=duplicate_student_id");
+    exit();
 }
 
 $error = $stmt->error;
@@ -74,6 +109,8 @@ $error = $stmt->error;
 $stmt->close();
 $conn->close();
 
-die("Unable to save student: " . htmlspecialchars($error));
+error_log("Unable to save student: " . $error);
+header("Location: index.php?error=save_failed");
+exit();
 
 ?>

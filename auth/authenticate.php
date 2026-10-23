@@ -17,7 +17,9 @@ if ($username === "" || $password === "") {
     exit();
 }
 
-$sql = "SELECT id, fullname, username, password, role
+$sql = "SELECT id, first_name, middle_name, last_name,
+               CONCAT_WS(' ', first_name, middle_name, last_name) AS fullname,
+               username, password, role
         FROM users
         WHERE username = ?
         LIMIT 1";

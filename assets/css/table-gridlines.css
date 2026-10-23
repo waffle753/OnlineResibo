@@ -1,0 +1,12 @@
+.table > :not(caption) > * > * {
+    border: 1px solid #dee2e6 !important;
+}
+
+.info-table {
+    border-collapse: collapse;
+}
+
+.info-table td {
+    border: 1px solid #dee2e6;
+    padding: 8px;
+}

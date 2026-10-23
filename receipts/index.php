@@ -19,7 +19,7 @@ $sql = "
         p.payment_method,
         p.status,
         s.student_id AS student_number,
-        s.fullname
+        CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name) AS fullname
     FROM payments p
     LEFT JOIN students s ON p.student_id = s.id
     ORDER BY p.id DESC
@@ -35,6 +35,7 @@ $result = $conn->query($sql);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Receipts - Online Resibo</title>
     <link rel="stylesheet" href="../adminlte/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="../assets/css/table-gridlines.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 
@@ -97,11 +98,35 @@ $result = $conn->query($sql);
                             </a>
                         </li>
 
+                        <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
+                            <li class="nav-item">
+                                <a href="../programs/index.php" class="nav-link">
+                                    <p>📚 &nbsp; Courses / Programs</p>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+
+                        <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
+                            <li class="nav-item">
+                                <a href="../departments/index.php" class="nav-link">
+                                    <p>🏢 &nbsp; Departments</p>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+
                         <li class="nav-item">
                             <a href="../payments/index.php" class="nav-link">
                                 <p>💳 &nbsp; Payments</p>
                             </a>
                         </li>
+
+                        <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
+                            <li class="nav-item">
+                                <a href="../payment-types/index.php" class="nav-link">
+                                    <p>🏷️ &nbsp; Payment Types</p>
+                                </a>
+                            </li>
+                        <?php endif; ?>
 
                         <li class="nav-item">
                             <a href="index.php" class="nav-link active">
@@ -160,8 +185,8 @@ $result = $conn->query($sql);
 
                     <div class="card">
 
-                        <div class="card-header">
-                            <h3 class="card-title">
+                        <div class="card-header" style="background: #0d6efd; border-bottom: 1px solid #0d6efd;">
+                            <h3 class="card-title text-white mb-0">
                                 <strong>Payment Receipts</strong>
                             </h3>
                         </div>

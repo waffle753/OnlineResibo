@@ -9,11 +9,27 @@ if (!isset($_SESSION["user_id"])) {
 
 require_once "../config/database.php";
 
-$sql = "SELECT id, student_id, fullname, course, year_level, status
+$sql = "SELECT students.id, students.student_id, students.first_name,
+                       students.middle_name, students.last_name,
+                       CONCAT_WS(' ', students.first_name, students.middle_name, students.last_name) AS fullname,
+                       c.course_id, c.name AS course, students.program_id,
+                       d.code AS department_code, d.name AS department, students.department_id,
+                       students.email, students.year_level, students.status
                     FROM students
-                    ORDER BY id DESC";
+                    JOIN course_programs c ON c.id = students.program_id
+                    LEFT JOIN departments d ON d.id = students.department_id
+                    ORDER BY students.id DESC";
 
 $result = $conn->query($sql);
+$programsResult = $conn->query("SELECT id, course_id, name FROM course_programs ORDER BY name ASC");
+$programs = $programsResult ? $programsResult->fetch_all(MYSQLI_ASSOC) : [];
+
+$departmentsExistsResult = $conn->query("SHOW TABLES LIKE 'departments'");
+$departmentsTableExists = $departmentsExistsResult && $departmentsExistsResult->num_rows > 0;
+$departmentsResult = $departmentsTableExists
+    ? $conn->query("SELECT id, code, name FROM departments ORDER BY name ASC")
+    : false;
+$departments = $departmentsResult ? $departmentsResult->fetch_all(MYSQLI_ASSOC) : [];
 
 ?>
 
@@ -28,6 +44,7 @@ $result = $conn->query($sql);
     <title>Students - Online Resibo</title>
 
     <link rel="stylesheet" href="../adminlte/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="../assets/css/table-gridlines.css">
     <link rel="stylesheet" href="../assets/css/sweetalert2.css">
 
 </head>
@@ -97,8 +114,8 @@ $result = $conn->query($sql);
             <div class="sidebar-brand">
                 <a href="../dashboard.php" class="brand-link">
                     <span class="brand-text fw-light">
-                        🏫 ONLINE RESIBO
-                    </span>
+                        🏫 <strong>ONLINE RESIBO</strong>
+                </span>
                 </a>
             </div>
 
@@ -121,12 +138,36 @@ $result = $conn->query($sql);
                             </a>
                         </li>
 
+                        <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
+                            <li class="nav-item">
+                                <a href="../programs/index.php" class="nav-link">
+                                    <p>📚 &nbsp; Courses / Programs</p>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+
+                        <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
+                            <li class="nav-item">
+                                <a href="../departments/index.php" class="nav-link">
+                                    <p>🏢 &nbsp; Departments</p>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+
                         <!-- PAYMENTS -->
                         <li class="nav-item">
                             <a href="../payments/index.php" class="nav-link">
                                 <p>💳 &nbsp; Payments</p>
                             </a>
                         </li>
+
+                        <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
+                            <li class="nav-item">
+                                <a href="../payment-types/index.php" class="nav-link">
+                                    <p>🏷️ &nbsp; Payment Types</p>
+                                </a>
+                            </li>
+                        <?php endif; ?>
 
                         <!-- RECEIPTS -->
                         <li class="nav-item">
@@ -174,7 +215,7 @@ $result = $conn->query($sql);
             <div class="sidebar-brand">
                 <a href="../dashboard.php" class="brand-link">
                     <span class="brand-text fw-light">
-                        🏫 ONLINE RESIBO
+                        🏫 <strong>ONLINE RESIBO</strong>
                     </span>
                 </a>
             </div>
@@ -198,12 +239,36 @@ $result = $conn->query($sql);
                             </a>
                         </li>
 
+                        <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
+                            <li class="nav-item">
+                                <a href="../programs/index.php" class="nav-link">
+                                    <p>📚 &nbsp; Courses / Programs</p>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+
+                        <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
+                            <li class="nav-item">
+                                <a href="../departments/index.php" class="nav-link">
+                                    <p>🏢 &nbsp; Departments</p>
+                                </a>
+                            </li>
+                        <?php endif; ?>
+
                         <!-- PAYMENTS -->
                         <li class="nav-item">
                             <a href="../payments/index.php" class="nav-link">
                                 <p>💳 &nbsp; Payments</p>
                             </a>
                         </li>
+
+                        <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
+                            <li class="nav-item">
+                                <a href="../payment-types/index.php" class="nav-link">
+                                    <p>🏷️ &nbsp; Payment Types</p>
+                                </a>
+                            </li>
+                        <?php endif; ?>
 
                         <!-- RECEIPTS -->
                         <li class="nav-item">
@@ -321,7 +386,7 @@ $result = $conn->query($sql);
 
                                     <!-- STUDENT ID -->
 
-                                    <div class="col-md-4 mb-3">
+                                    <div class="col-md-3 mb-3">
 
                                         <label class="form-label">
                                             Student ID
@@ -333,37 +398,75 @@ $result = $conn->query($sql);
                                     </div>
 
 
-                                    <!-- FULL NAME -->
+                                    <!-- NAME -->
 
-                                    <div class="col-md-4 mb-3">
+                                    <div class="col-md-3 mb-3">
 
                                         <label class="form-label">
-                                            Full Name
+                                            First Name
                                         </label>
 
-                                        <input type="text" name="fullname" class="form-control"
-                                            placeholder="Last Name, First Name" required>
+                                        <input type="text" name="first_name" class="form-control" placeholder="e.g. Juan" required>
 
+                                    </div>
+
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">Middle Name</label>
+                                        <input type="text" name="middle_name" class="form-control" placeholder="e.g. Santos">
+                                    </div>
+
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">Last Name</label>
+                                        <input type="text" name="last_name" class="form-control" placeholder="e.g. Dela Cruz" required>
+                                    </div>
+
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">Email Address <span class="text-muted">(optional)</span></label>
+                                        <input type="email" name="email" class="form-control" maxlength="254"
+                                            placeholder="student@example.com">
                                     </div>
 
 
                                     <!-- COURSE -->
 
-                                    <div class="col-md-4 mb-3">
+                                    <div class="col-md-3 mb-3">
 
                                         <label class="form-label">
                                             Course / Program
                                         </label>
 
-                                        <input type="text" name="course" class="form-control" placeholder="e.g. BSIT"
-                                            required>
+                                        <select name="program_id" class="form-select" required>
+                                            <option value="">Select Course / Program</option>
+                                            <?php foreach ($programs as $program): ?>
+                                                <option value="<?= (int) $program["id"] ?>">
+                                                    <?= htmlspecialchars($program["course_id"] . " - " . $program["name"]) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
 
                                     </div>
 
+                                    <!-- DEPARTMENT -->
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">
+                                            Department
+                                        </label>
+                                        <select name="department_id" class="form-select" <?= $departmentsTableExists ? 'required' : '' ?>>
+                                            <option value="">Select Department</option>
+                                            <?php foreach ($departments as $department): ?>
+                                                <option value="<?= (int) $department["id"] ?>">
+                                                    <?= htmlspecialchars($department["code"] . " - " . $department["name"]) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <?php if (!$departmentsTableExists): ?>
+                                            <small class="text-warning d-block mt-1">Department table is not configured yet. Run the migration first.</small>
+                                        <?php endif; ?>
+                                    </div>
 
                                     <!-- YEAR LEVEL -->
 
-                                    <div class="col-md-4 mb-3">
+                                    <div class="col-md-3 mb-3">
 
                                         <label class="form-label">
                                             Year Level
@@ -402,7 +505,7 @@ $result = $conn->query($sql);
 
                                     <!-- STATUS -->
 
-                                    <div class="col-md-4 mb-3">
+                                    <div class="col-md-3 mb-3">
 
                                         <label class="form-label">
                                             Status
@@ -425,7 +528,7 @@ $result = $conn->query($sql);
 
                                     <!-- BUTTON -->
 
-                                    <div class="col-md-4 mb-3 d-flex align-items-end">
+                                    <div class="col-md-3 mb-3 d-flex align-items-end">
 
                                         <button type="submit" class="btn btn-primary w-100">
 
@@ -491,8 +594,9 @@ $result = $conn->query($sql);
                                             <th>Student ID</th>
 
                                             <th>Name</th>
-
+                                            <th>Email</th>
                                             <th>Course</th>
+                                            <th>Department</th>
 
                                             <th>Year Level</th>
 
@@ -528,8 +632,13 @@ $result = $conn->query($sql);
                                                         <?= htmlspecialchars($student["fullname"]) ?>
                                                     </td>
 
+                                                    <td><?= htmlspecialchars($student["email"] ?: "—") ?></td>
+
                                                     <td>
-                                                        <?= htmlspecialchars($student["course"]) ?>
+                                                        <?= htmlspecialchars($student["course_id"] . " - " . $student["course"]) ?>
+                                                    </td>
+                                                    <td>
+                                                        <?= htmlspecialchars(($student["department_code"] ?? "") !== "" ? $student["department_code"] . " - " . ($student["department"] ?? "") : "—") ?>
                                                     </td>
 
                                                     <td>
@@ -559,8 +668,13 @@ $result = $conn->query($sql);
                                                         <button type="button" class="btn btn-warning btn-sm edit-btn"
                                                             data-id="<?= (int) $student["id"] ?>"
                                                             data-student-id="<?= htmlspecialchars($student["student_id"], ENT_QUOTES, 'UTF-8') ?>"
-                                                            data-fullname="<?= htmlspecialchars($student["fullname"], ENT_QUOTES, 'UTF-8') ?>"
-                                                            data-course="<?= htmlspecialchars($student["course"], ENT_QUOTES, 'UTF-8') ?>"
+                                                            data-first-name="<?= htmlspecialchars($student["first_name"], ENT_QUOTES, 'UTF-8') ?>"
+                                                            data-middle-name="<?= htmlspecialchars($student["middle_name"] ?? "", ENT_QUOTES, 'UTF-8') ?>"
+                                                            data-last-name="<?= htmlspecialchars($student["last_name"], ENT_QUOTES, 'UTF-8') ?>"
+                                                            data-email="<?= htmlspecialchars($student["email"] ?? "", ENT_QUOTES, 'UTF-8') ?>"
+                                                            data-program-id="<?= (int) $student["program_id"] ?>"
+                                                            data-department-id="<?= (int) ($student["department_id"] ?? 0) ?>"
+                                                            data-course-id="<?= htmlspecialchars($student["course_id"], ENT_QUOTES, 'UTF-8') ?>"
                                                             data-year-level="<?= htmlspecialchars($student["year_level"], ENT_QUOTES, 'UTF-8') ?>"
                                                             data-status="<?= htmlspecialchars($student["status"], ENT_QUOTES, 'UTF-8') ?>">
                                                             Edit
@@ -583,7 +697,7 @@ $result = $conn->query($sql);
 
                                             <tr>
 
-                                                <td colspan="7" class="text-center text-muted py-4">
+                                                <td colspan="8" class="text-center text-muted py-4">
 
                                                     No students registered yet.
 
@@ -678,16 +792,31 @@ $result = $conn->query($sql);
                             </div>
 
 
-                            <!-- FULL NAME -->
+                            <!-- NAME -->
 
                             <div class="col-md-6 mb-3">
 
                                 <label class="form-label">
-                                    Full Name
+                                    First Name
                                 </label>
 
-                                <input type="text" name="fullname" id="edit_fullname" class="form-control" required>
+                                <input type="text" name="first_name" id="edit_first_name" class="form-control" required>
 
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Middle Name</label>
+                                <input type="text" name="middle_name" id="edit_middle_name" class="form-control">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Last Name</label>
+                                <input type="text" name="last_name" id="edit_last_name" class="form-control" required>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Email Address <span class="text-muted">(optional)</span></label>
+                                <input type="email" name="email" id="edit_email" class="form-control" maxlength="254">
                             </div>
 
 
@@ -699,8 +828,30 @@ $result = $conn->query($sql);
                                     Course / Program
                                 </label>
 
-                                <input type="text" name="course" id="edit_course" class="form-control" required>
+                                <select name="program_id" id="edit_program_id" class="form-select" required>
+                                    <option value="">Select Course / Program</option>
+                                    <?php foreach ($programs as $program): ?>
+                                        <option value="<?= (int) $program["id"] ?>">
+                                            <?= htmlspecialchars($program["course_id"] . " - " . $program["name"]) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
 
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Department</label>
+                                <select name="department_id" id="edit_department_id" class="form-select" <?= $departmentsTableExists ? 'required' : '' ?>>
+                                    <option value="">Select Department</option>
+                                    <?php foreach ($departments as $department): ?>
+                                        <option value="<?= (int) $department["id"] ?>">
+                                            <?= htmlspecialchars($department["code"] . " - " . $department["name"]) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <?php if (!$departmentsTableExists): ?>
+                                    <small class="text-warning d-block mt-1">Department table is not configured yet. Run the migration first.</small>
+                                <?php endif; ?>
                             </div>
 
 
@@ -848,11 +999,23 @@ $result = $conn->query($sql);
                     const studentId =
                         this.getAttribute("data-student-id");
 
-                    const fullname =
-                        this.getAttribute("data-fullname");
+                    const firstName =
+                        this.getAttribute("data-first-name");
 
-                    const course =
-                        this.getAttribute("data-course");
+                    const middleName =
+                        this.getAttribute("data-middle-name");
+
+                    const lastName =
+                        this.getAttribute("data-last-name");
+
+                    const email =
+                        this.getAttribute("data-email");
+
+                    const programId =
+                        this.getAttribute("data-program-id");
+
+                    const departmentId =
+                        this.getAttribute("data-department-id");
 
                     const yearLevel =
                         this.getAttribute("data-year-level");
@@ -869,11 +1032,23 @@ $result = $conn->query($sql);
                     document.getElementById("edit_student_id").value =
                         studentId;
 
-                    document.getElementById("edit_fullname").value =
-                        fullname;
+                    document.getElementById("edit_first_name").value =
+                        firstName;
 
-                    document.getElementById("edit_course").value =
-                        course;
+                    document.getElementById("edit_middle_name").value =
+                        middleName;
+
+                    document.getElementById("edit_last_name").value =
+                        lastName;
+
+                    document.getElementById("edit_email").value =
+                        email;
+
+                    document.getElementById("edit_program_id").value =
+                        programId;
+
+                    document.getElementById("edit_department_id").value =
+                        departmentId;
 
                     document.getElementById("edit_year_level").value =
                         yearLevel;
@@ -890,7 +1065,11 @@ $result = $conn->query($sql);
 
                     if (typeof bootstrap === "undefined") {
 
-                        alert("Bootstrap JavaScript is not loaded.");
+                        Swal.fire({
+                            icon: "error",
+                            title: "Unable to open form",
+                            text: "The form component could not be loaded."
+                        });
 
                         return;
 
@@ -928,33 +1107,6 @@ $result = $conn->query($sql);
                     const studentName =
                         this.getAttribute("data-name");
 
-
-                    // Check SweetAlert
-
-                    if (typeof Swal === "undefined") {
-
-                        const confirmed =
-                            confirm(
-                                "Are you sure you want to delete " +
-                                studentName +
-                                "?"
-                            );
-
-
-                        if (confirmed) {
-
-                            window.location.href =
-                                "delete.php?id=" +
-                                encodeURIComponent(studentId);
-
-                        }
-
-                        return;
-
-                    }
-
-
-                    // SweetAlert confirmation
 
                     Swal.fire({
 
@@ -1008,6 +1160,8 @@ $result = $conn->query($sql);
 
             const success =
                 urlParams.get("success");
+            const error =
+                urlParams.get("error");
 
 
             if (typeof Swal !== "undefined") {
@@ -1115,6 +1269,35 @@ $result = $conn->query($sql);
 
                 }
 
+            }
+
+            const studentErrors = {
+                missing: "Complete all required student fields.",
+                invalid_status: "Choose a valid student status.",
+                invalid_program: "Choose a valid course/program.",
+                invalid_department: "Choose a valid department.",
+                department_missing: "The department table is not configured yet. Run the migration first.",
+                invalid_email: "Enter a valid email address or leave the email field blank.",
+                invalid_email: "Enter a valid email address or leave the email field blank.",
+                database: "Unable to prepare the student record.",
+                duplicate_student_id: "That student ID is already in use.",
+                save_failed: "Unable to save the student.",
+                update_failed: "Unable to update the student.",
+                delete_failed: "Unable to delete the student.",
+                invalid_id: "The selected student is invalid."
+            };
+
+            if (error && studentErrors[error]) {
+                Swal.fire({
+                    icon: "error",
+                    title: "Unable to complete",
+                    text: studentErrors[error],
+                    confirmButtonColor: "#dc3545"
+                });
+            }
+
+            if (success || error) {
+                window.history.replaceState({}, document.title, window.location.pathname);
             }
 
         });

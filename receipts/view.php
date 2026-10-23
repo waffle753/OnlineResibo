@@ -27,7 +27,7 @@ $sql = "
         p.status,
         p.created_at,
         s.student_id AS student_number,
-        s.fullname
+        CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name) AS fullname
     FROM payments p
     LEFT JOIN students s
         ON p.student_id = s.id
@@ -66,6 +66,7 @@ $stmt->close();
     <title>Receipt - <?= htmlspecialchars($payment["reference_no"]) ?></title>
 
     <link rel="stylesheet" href="../adminlte/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="../assets/css/table-gridlines.css">
 
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
