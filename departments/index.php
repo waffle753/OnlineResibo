@@ -158,11 +158,14 @@ $messages = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Departments - Online Resibo</title>
     <link rel="stylesheet" href="../adminlte/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-regular-rounded/css/uicons-regular-rounded.css">
+    <link rel="stylesheet" href="../assets/css/sidebar.css">
+    <script defer src="../assets/js/sidebar-icons.js"></script>
     <link rel="stylesheet" href="../assets/css/table-gridlines.css">
     <link rel="stylesheet" href="../assets/css/sweetalert2.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
-<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+<body class="layout-fixed sidebar-expand-lg sidebar-mini bg-body-tertiary">
 <div class="app-wrapper">
     <nav class="app-header navbar navbar-expand bg-body">
         <div class="container-fluid">
@@ -279,7 +282,7 @@ $messages = [
     <div class="modal fade" id="editDepartmentModal" tabindex="-1" aria-labelledby="editDepartmentModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form method="POST" action="index.php">
+                <form method="POST" action="index.php" data-disable-unchanged>
                     <input type="hidden" name="action" value="update">
                     <input type="hidden" name="id" id="edit_department_id">
                     <div class="modal-header">
@@ -298,7 +301,7 @@ $messages = [
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Update Department</button>
+                        <button type="submit" class="btn btn-primary" data-change-submit disabled>Update Department</button>
                     </div>
                 </form>
             </div>
@@ -354,5 +357,6 @@ if (messageKey && messages[messageKey]) {
     });
 }
 </script>
+<script src="../assets/js/disable-unchanged-submit.js"></script>
 </body>
 </html>

@@ -180,6 +180,8 @@ $messages = [
     "save_failed" => ["danger", "Unable to save the user."],
     "delete_failed" => ["danger", "Unable to delete the user."],
 ];
+$messageKey = $_GET["message"] ?? null;
+$flashMessage = is_string($messageKey) ? ($messages[$messageKey] ?? null) : null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -188,11 +190,14 @@ $messages = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Users - Online Resibo</title>
     <link rel="stylesheet" href="../adminlte/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-regular-rounded/css/uicons-regular-rounded.css">
+    <link rel="stylesheet" href="../assets/css/sidebar.css">
+    <script defer src="../assets/js/sidebar-icons.js"></script>
     <link rel="stylesheet" href="../assets/css/table-gridlines.css">
     <link rel="stylesheet" href="../assets/css/sweetalert2.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
-<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+<body class="layout-fixed sidebar-expand-lg sidebar-mini bg-body-tertiary">
 <div class="app-wrapper">
     <nav class="app-header navbar navbar-expand bg-body">
         <div class="container-fluid">
@@ -239,13 +244,7 @@ $messages = [
 
         <div class="app-content">
             <div class="container-fluid">
-                <?php
-                $messageKey = $_GET["message"] ?? null;
-                if (isset($messages[$messageKey])) {
-                    [$type, $text] = $messages[$messageKey];
-                    echo '<div class="alert alert-' . htmlspecialchars($type) . ' alert-dismissible fade show" role="alert">' . htmlspecialchars($text) . '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>';
-                }
-                ?>
+
 
                 <div class="card card-primary mb-4">
                     <div class="card-header"><h3 class="card-title"><strong>Add User</strong></h3></div>
@@ -326,7 +325,7 @@ $messages = [
                                                     <form method="POST" action="index.php" class="d-inline user-delete-form">
                                                         <input type="hidden" name="action" value="delete">
                                                         <input type="hidden" name="id" value="<?= (int) ($user["id"] ?? 0) ?>">
-                                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this user?');">Delete</button>
+                                                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                                                     </form>
                                                 </td>
                                             </tr>
@@ -346,7 +345,7 @@ $messages = [
     <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form method="POST" action="index.php">
+                <form method="POST" action="index.php" data-disable-unchanged>
                     <input type="hidden" name="action" value="update">
                     <input type="hidden" name="id" id="edit_user_id">
                     <div class="modal-header">
@@ -384,7 +383,7 @@ $messages = [
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <button type="submit" class="btn btn-primary" data-change-submit disabled>Save Changes</button>
                     </div>
                 </form>
             </div>
@@ -392,9 +391,41 @@ $messages = [
     </div>
 </div>
 
+<script src="../assets/js/sweetalert2.all.min.js"></script>
 <script src="../assets/js/bootstrap.bundle.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const flashMessage = <?= json_encode($flashMessage, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+        if (flashMessage) {
+            const [type, text] = flashMessage;
+            Swal.fire({
+                icon: type === 'danger' ? 'error' : type,
+                title: type === 'success' ? 'Success' : type === 'warning' ? 'Notice' : 'Unable to complete',
+                text: text,
+                confirmButtonColor: type === 'success' ? '#198754' : '#dc3545'
+            });
+        }
+
+        document.querySelectorAll('.user-delete-form').forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                event.preventDefault();
+                Swal.fire({
+                    title: 'Delete user?',
+                    text: 'This action cannot be undone.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, delete',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#dc3545',
+                    reverseButtons: true
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+
         const editButtons = document.querySelectorAll('.edit-user-btn');
         editButtons.forEach(function (button) {
             button.addEventListener('click', function () {
@@ -412,5 +443,6 @@ $messages = [
         });
     });
 </script>
+<script src="../assets/js/disable-unchanged-submit.js"></script>
 </body>
 </html>

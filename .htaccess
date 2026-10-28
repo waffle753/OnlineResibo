@@ -1,0 +1,6 @@
+<FilesMatch "^\.env">
+    Require all denied
+</FilesMatch>
+
+RewriteEngine On
+RewriteRule ^node_modules/ - [F,L]

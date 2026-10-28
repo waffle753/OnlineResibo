@@ -44,12 +44,15 @@ $departments = $departmentsResult ? $departmentsResult->fetch_all(MYSQLI_ASSOC) 
     <title>Students - Online Resibo</title>
 
     <link rel="stylesheet" href="../adminlte/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-regular-rounded/css/uicons-regular-rounded.css">
+    <link rel="stylesheet" href="../assets/css/sidebar.css">
+    <script defer src="../assets/js/sidebar-icons.js"></script>
     <link rel="stylesheet" href="../assets/css/table-gridlines.css">
     <link rel="stylesheet" href="../assets/css/sweetalert2.css">
 
 </head>
 
-<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+<body class="layout-fixed sidebar-expand-lg sidebar-mini bg-body-tertiary">
 
     <div class="app-wrapper">
 
@@ -393,7 +396,7 @@ $departments = $departmentsResult ? $departmentsResult->fetch_all(MYSQLI_ASSOC) 
                                         </label>
 
                                         <input type="text" name="student_id" class="form-control"
-                                            placeholder="e.g. 2026-0001" required>
+                                            placeholder="e.g. 202500483" inputmode="numeric" maxlength="9" required>
 
                                     </div>
 
@@ -406,23 +409,23 @@ $departments = $departmentsResult ? $departmentsResult->fetch_all(MYSQLI_ASSOC) 
                                             First Name
                                         </label>
 
-                                        <input type="text" name="first_name" class="form-control" placeholder="e.g. Juan" required>
+                                        <input type="text" name="first_name" class="form-control" placeholder="e.g. Juan" minlength="2" maxlength="50" required>
 
                                     </div>
 
                                     <div class="col-md-3 mb-3">
                                         <label class="form-label">Middle Name</label>
-                                        <input type="text" name="middle_name" class="form-control" placeholder="e.g. Santos">
+                                        <input type="text" name="middle_name" class="form-control" placeholder="e.g. Santos" maxlength="50">
                                     </div>
 
                                     <div class="col-md-3 mb-3">
                                         <label class="form-label">Last Name</label>
-                                        <input type="text" name="last_name" class="form-control" placeholder="e.g. Dela Cruz" required>
+                                        <input type="text" name="last_name" class="form-control" placeholder="e.g. Dela Cruz" minlength="2" maxlength="50" required>
                                     </div>
 
                                     <div class="col-md-3 mb-3">
                                         <label class="form-label">Email Address <span class="text-muted">(optional)</span></label>
-                                        <input type="email" name="email" class="form-control" maxlength="254"
+                                        <input type="text" name="email" class="form-control" inputmode="email" maxlength="254"
                                             placeholder="student@example.com">
                                     </div>
 
@@ -768,7 +771,7 @@ $departments = $departmentsResult ? $departmentsResult->fetch_all(MYSQLI_ASSOC) 
 
                 <!-- FORM -->
 
-                <form action="update.php" method="POST">
+                <form action="update.php" method="POST" data-disable-unchanged>
 
                     <div class="modal-body">
 
@@ -787,7 +790,7 @@ $departments = $departmentsResult ? $departmentsResult->fetch_all(MYSQLI_ASSOC) 
                                     Student ID
                                 </label>
 
-                                <input type="text" name="student_id" id="edit_student_id" class="form-control" required>
+                                <input type="text" name="student_id" id="edit_student_id" class="form-control" inputmode="numeric" maxlength="9" required>
 
                             </div>
 
@@ -800,23 +803,23 @@ $departments = $departmentsResult ? $departmentsResult->fetch_all(MYSQLI_ASSOC) 
                                     First Name
                                 </label>
 
-                                <input type="text" name="first_name" id="edit_first_name" class="form-control" required>
+                                <input type="text" name="first_name" id="edit_first_name" class="form-control" minlength="2" maxlength="50" required>
 
                             </div>
 
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Middle Name</label>
-                                <input type="text" name="middle_name" id="edit_middle_name" class="form-control">
+                                <input type="text" name="middle_name" id="edit_middle_name" class="form-control" maxlength="50">
                             </div>
 
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Last Name</label>
-                                <input type="text" name="last_name" id="edit_last_name" class="form-control" required>
+                                <input type="text" name="last_name" id="edit_last_name" class="form-control" minlength="2" maxlength="50" required>
                             </div>
 
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Email Address <span class="text-muted">(optional)</span></label>
-                                <input type="email" name="email" id="edit_email" class="form-control" maxlength="254">
+                                <input type="text" name="email" id="edit_email" class="form-control" inputmode="email" maxlength="254">
                             </div>
 
 
@@ -927,7 +930,7 @@ $departments = $departmentsResult ? $departmentsResult->fetch_all(MYSQLI_ASSOC) 
 
                         </button>
 
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" data-change-submit disabled>
 
                             Update Student
 
@@ -1277,10 +1280,20 @@ $departments = $departmentsResult ? $departmentsResult->fetch_all(MYSQLI_ASSOC) 
                 invalid_program: "Choose a valid course/program.",
                 invalid_department: "Choose a valid department.",
                 department_missing: "The department table is not configured yet. Run the migration first.",
-                invalid_email: "Enter a valid email address or leave the email field blank.",
-                invalid_email: "Enter a valid email address or leave the email field blank.",
+                student_id_required: "Student ID is required.",
+                student_id_format: "Student ID must be exactly 9 digits.",
+                duplicate_student_id: "This Student ID already exists.",
+                first_name_required: "First name is required.",
+                first_name_length: "First name must be between 2 and 50 characters.",
+                first_name_characters: "First name contains invalid characters.",
+                middle_name_length: "Middle name must be between 2 and 50 characters.",
+                middle_name_characters: "Middle name contains invalid characters.",
+                last_name_required: "Last name is required.",
+                last_name_length: "Last name must be between 2 and 50 characters.",
+                last_name_characters: "Last name contains invalid characters.",
+                invalid_email: "Email address must be valid.",
+                email_too_long: "Email address must not exceed 254 characters.",
                 database: "Unable to prepare the student record.",
-                duplicate_student_id: "That student ID is already in use.",
                 save_failed: "Unable to save the student.",
                 update_failed: "Unable to update the student.",
                 delete_failed: "Unable to delete the student.",
@@ -1302,6 +1315,8 @@ $departments = $departmentsResult ? $departmentsResult->fetch_all(MYSQLI_ASSOC) 
 
         });
     </script>
+    <script src="../assets/js/student-validation.js"></script>
+    <script src="../assets/js/disable-unchanged-submit.js"></script>
 
 </body>
 

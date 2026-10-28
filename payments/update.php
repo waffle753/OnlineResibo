@@ -8,6 +8,7 @@ if (!isset($_SESSION["user_id"])) {
 }
 
 require_once "../config/database.php";
+require_once "send_receipt_email.php";
 
 
 // =====================================================
@@ -49,6 +50,10 @@ $payment_method =
 
 $status =
     trim($_POST["status"] ?? "Paid");
+if (!in_array($status, ["Paid", "Pending", "Cancelled"], true)) {
+    header("Location: index.php?error=invalid_status");
+    exit();
+}
 
 
 // =====================================================
@@ -122,7 +127,7 @@ $amount = (float) $amount;
 
 $checkPayment =
     $conn->prepare(
-        "SELECT id
+        "SELECT id, status
          FROM payments
          WHERE id = ?"
     );
@@ -164,6 +169,8 @@ if ($paymentResult->num_rows === 0) {
 
 }
 
+$existingPayment = $paymentResult->fetch_assoc();
+$shouldSendReceipt = $status === "Paid" && $existingPayment["status"] !== "Paid";
 
 $checkPayment->close();
 
@@ -288,9 +295,12 @@ $stmt->bind_param(
 if ($stmt->execute()) {
 
     $stmt->close();
+    $emailStatus = $shouldSendReceipt
+        ? sendPaymentReceiptEmail($conn, $id)
+        : "skipped";
 
     header(
-        "Location: index.php?success=updated"
+        "Location: index.php?success=updated&email=" . urlencode($emailStatus)
     );
 
     exit();

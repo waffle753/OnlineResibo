@@ -1,0 +1,87 @@
+@media (min-width: 992px) {
+    body.sidebar-collapse .app-sidebar {
+        width: 4.6rem !important;
+        min-width: 4.6rem !important;
+        max-width: 4.6rem !important;
+        margin-left: 0 !important;
+    }
+
+    body.sidebar-collapse .sidebar-menu .nav-link {
+        justify-content: center;
+    }
+
+    body.sidebar-collapse .sidebar-menu .nav-link > p {
+        display: none !important;
+    }
+
+    body.sidebar-collapse .sidebar-menu .nav-link > .nav-icon {
+        display: flex !important;
+        visibility: visible !important;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.5rem;
+        max-width: 1.5rem;
+        margin: 0;
+        font-style: normal;
+    }
+
+    body.sidebar-collapse .sidebar-brand {
+        justify-content: center;
+    }
+
+    body.sidebar-collapse .sidebar-brand .brand-text {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        width: auto !important;
+        max-width: none !important;
+        overflow: visible;
+        visibility: visible !important;
+        margin: 0 !important;
+        animation: none !important;
+    }
+
+    body.sidebar-collapse .sidebar-brand .brand-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    body.sidebar-collapse .sidebar-brand .brand-name {
+        display: none !important;
+    }
+
+    body.sidebar-collapse:not(.sidebar-without-hover) .app-sidebar:hover {
+        width: var(--lte-sidebar-width) !important;
+        min-width: var(--lte-sidebar-width) !important;
+        max-width: var(--lte-sidebar-width) !important;
+    }
+
+    body.sidebar-collapse:not(.sidebar-without-hover) .app-sidebar:hover .sidebar-menu .nav-link {
+        width: auto !important;
+        justify-content: flex-start;
+    }
+
+    body.sidebar-collapse:not(.sidebar-without-hover) .app-sidebar:hover .sidebar-menu .nav-link > p {
+        display: inline-block !important;
+        width: auto !important;
+        padding-left: .5rem;
+        visibility: visible !important;
+        animation: none !important;
+    }
+
+    body.sidebar-collapse:not(.sidebar-without-hover) .app-sidebar:hover .sidebar-menu .nav-header {
+        display: inline !important;
+    }
+
+    body.sidebar-collapse:not(.sidebar-without-hover) .app-sidebar:hover .sidebar-brand .brand-text {
+        justify-content: flex-start;
+    }
+
+    body.sidebar-collapse:not(.sidebar-without-hover) .app-sidebar:hover .sidebar-brand .brand-name {
+        display: inline !important;
+        visibility: visible !important;
+        margin-left: .5rem;
+        animation: none !important;
+    }
+}

@@ -11,6 +11,7 @@ if (!isset($_SESSION["user_id"])) {
 }
 
 require_once "../config/database.php";
+require_once "send_receipt_email.php";
 
 
 // =====================================================
@@ -42,6 +43,10 @@ $payment_date = trim($_POST["payment_date"] ?? "");
 $payment_method = trim($_POST["payment_method"] ?? "");
 
 $status = trim($_POST["status"] ?? "Paid");
+if (!in_array($status, ["Paid", "Pending", "Cancelled"], true)) {
+    header("Location: index.php?error=invalid_status");
+    exit();
+}
 
 
 // =====================================================
@@ -262,14 +267,17 @@ $stmt->bind_param(
 // =====================================================
 
 if ($stmt->execute()) {
-
+    $paymentId = (int) $stmt->insert_id;
     $stmt->close();
 
-    // Send generated reference to index.php
+    $emailStatus = $status === "Paid"
+        ? sendPaymentReceiptEmail($conn, $paymentId)
+        : "skipped";
 
     header(
         "Location: index.php?success=added&reference=" .
-        urlencode($reference_no)
+        urlencode($reference_no) .
+        "&email=" . urlencode($emailStatus)
     );
 
     exit();

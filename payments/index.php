@@ -59,12 +59,15 @@ $paymentsResult = $conn->query($paymentsSql);
 <title>Payments - Online Resibo</title>
 
 <link rel="stylesheet" href="../adminlte/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-regular-rounded/css/uicons-regular-rounded.css">
+<link rel="stylesheet" href="../assets/css/sidebar.css">
+<script defer src="../assets/js/sidebar-icons.js"></script>
 <link rel="stylesheet" href="../assets/css/table-gridlines.css">
 <link rel="stylesheet" href="../assets/css/sweetalert2.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 
-<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+<body class="layout-fixed sidebar-expand-lg sidebar-mini bg-body-tertiary">
 
 <div class="app-wrapper">
 
@@ -676,7 +679,7 @@ EDIT PAYMENT MODAL
 
             </div>
 
-            <form action="update.php" method="POST">
+            <form action="update.php" method="POST" data-disable-unchanged>
 
                 <div class="modal-body">
 
@@ -884,6 +887,8 @@ EDIT PAYMENT MODAL
                     <button
                         type="submit"
                         class="btn btn-primary"
+                        data-change-submit
+                        disabled
                     >
                         <i class="bi bi-save"></i>
                         Update Payment
@@ -1057,13 +1062,21 @@ document.addEventListener("DOMContentLoaded", function() {
 
     const success = params.get("success");
     const error = params.get("error");
+    const emailStatus = params.get("email");
+    const emailMessage = emailStatus === "sent"
+        ? "The student received a printable PDF receipt by email."
+        : emailStatus === "failed"
+            ? "The payment was saved, but the receipt email could not be sent. Check the server mailer configuration."
+            : emailStatus === "skipped"
+                ? "The payment was saved, but no email was sent because the payment is not newly marked Paid or the student has no valid email address."
+                : "";
 
     if (success === "added") {
 
         Swal.fire({
-            icon: "success",
-            title: "Payment Added Successfully!",
-            text: "The payment has been recorded.",
+            icon: emailStatus === "failed" ? "warning" : "success",
+            title: emailStatus === "failed" ? "Payment saved; email failed" : "Payment Added Successfully!",
+            text: ["The payment has been recorded.", emailMessage].filter(Boolean).join(" "),
             timer: 2500,
             timerProgressBar: true
         });
@@ -1073,9 +1086,9 @@ document.addEventListener("DOMContentLoaded", function() {
     if (success === "updated") {
 
         Swal.fire({
-            icon: "success",
-            title: "Payment Updated Successfully!",
-            text: "The payment information has been updated.",
+            icon: emailStatus === "failed" ? "warning" : "success",
+            title: emailStatus === "failed" ? "Payment saved; email failed" : "Payment Updated Successfully!",
+            text: ["The payment information has been updated.", emailMessage].filter(Boolean).join(" "),
             timer: 2500,
             timerProgressBar: true
         });
@@ -1116,6 +1129,8 @@ document.addEventListener("DOMContentLoaded", function() {
             message = "The payment was not found.";
         } else if (error === "delete_failed") {
             message = "Unable to delete the payment.";
+        } else if (error === "invalid_status") {
+            message = "Select a valid payment status.";
         }
 
         Swal.fire({
@@ -1129,6 +1144,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 });
 </script>
+<script src="../assets/js/disable-unchanged-submit.js"></script>
 
 </body>
 </html>

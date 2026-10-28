@@ -8,6 +8,7 @@ if (!isset($_SESSION["user_id"])) {
 }
 
 require_once "../config/database.php";
+require_once "validation.php";
 
 $departmentsTableExists = $conn->query("SHOW TABLES LIKE 'departments'");
 if (!$departmentsTableExists || $departmentsTableExists->num_rows === 0) {
@@ -17,11 +18,6 @@ if (!$departmentsTableExists || $departmentsTableExists->num_rows === 0) {
 
 if (
     !isset($_POST["id"]) ||
-    !isset($_POST["student_id"]) ||
-    !isset($_POST["first_name"]) ||
-    !isset($_POST["middle_name"]) ||
-    !isset($_POST["last_name"]) ||
-    !isset($_POST["email"]) ||
     !isset($_POST["program_id"]) ||
     !isset($_POST["department_id"]) ||
     !isset($_POST["year_level"]) ||
@@ -32,18 +28,24 @@ if (
 }
 
 
-$id = (int) $_POST["id"];
-
-$student_id = trim($_POST["student_id"]);
-$first_name = trim($_POST["first_name"]);
-$middle_name = trim($_POST["middle_name"]);
-$last_name = trim($_POST["last_name"]);
-$emailInput = $_POST["email"];
-if (!is_string($emailInput)) {
-    header("Location: index.php?error=invalid_email");
+$id = filter_var($_POST["id"], FILTER_VALIDATE_INT, ["options" => ["min_range" => 1]]);
+if ($id === false) {
+    header("Location: index.php?error=invalid_id");
     exit();
 }
-$email = trim($emailInput);
+
+$validation = validateStudentIdentity($_POST);
+if ($validation["error"] !== null) {
+    header("Location: index.php?error=" . urlencode($validation["error"]));
+    exit();
+}
+
+$student = $validation["values"];
+$student_id = $student["student_id"];
+$first_name = $student["first_name"];
+$middle_name = $student["middle_name"];
+$last_name = $student["last_name"];
+$email = $student["email"];
 $program_id = filter_var($_POST["program_id"], FILTER_VALIDATE_INT);
 $department_id = filter_var($_POST["department_id"], FILTER_VALIDATE_INT);
 $year_level = trim($_POST["year_level"]);
@@ -59,8 +61,13 @@ if ($department_id === false || $department_id <= 0) {
     exit();
 }
 
-if ($email !== "" && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-    header("Location: index.php?error=invalid_email");
+$studentIdExists = studentIdExists($conn, $student_id, $id);
+if ($studentIdExists === null) {
+    header("Location: index.php?error=database");
+    exit();
+}
+if ($studentIdExists) {
+    header("Location: index.php?error=duplicate_student_id");
     exit();
 }
 

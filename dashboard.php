@@ -59,6 +59,9 @@ $recentPaymentsResult = $conn->query(
     <title>Dashboard - Online Resibo</title>
 
     <link rel="stylesheet" href="adminlte/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-regular-rounded/css/uicons-regular-rounded.css">
+    <link rel="stylesheet" href="assets/css/sidebar.css">
+    <script defer src="assets/js/sidebar-icons.js"></script>
     <link rel="stylesheet" href="assets/css/table-gridlines.css">
     <style>
         .student-summary-card {
@@ -85,7 +88,7 @@ $recentPaymentsResult = $conn->query(
 
 </head>
 
-<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+<body class="layout-fixed sidebar-expand-lg sidebar-mini bg-body-tertiary">
 
     <div class="app-wrapper">
 

@@ -11,9 +11,18 @@ require_once "../config/database.php";
 $fromDate = $_GET["from_date"] ?? "";
 $toDate = $_GET["to_date"] ?? "";
 $status = $_GET["status"] ?? "All";
+$departmentId = $_GET["department_id"] ?? "";
+$programId = $_GET["program_id"] ?? "";
 $export = $_GET["export"] ?? "";
 
-if (!is_string($fromDate) || !is_string($toDate) || !is_string($status) || !is_string($export)) {
+if (
+    !is_string($fromDate)
+    || !is_string($toDate)
+    || !is_string($status)
+    || !is_string($departmentId)
+    || !is_string($programId)
+    || !is_string($export)
+) {
     header("Location: index.php?report_error=invalid_filters");
     exit();
 }
@@ -46,18 +55,41 @@ if (!in_array($status, ["All", "Paid", "Pending", "Cancelled"], true)) {
     exit();
 }
 
+foreach ([$departmentId, $programId] as $filterValue) {
+    if ($filterValue !== "" && filter_var($filterValue, FILTER_VALIDATE_INT, ["options" => ["min_range" => 1]]) === false) {
+        header("Location: index.php?report_error=invalid_filters");
+        exit();
+    }
+}
+
 if ($export !== "" && $export !== "csv") {
     header("Location: index.php?report_error=invalid_export");
     exit();
 }
 
+$departmentsResult = $conn->query("SELECT id, code, name FROM departments ORDER BY name ASC");
+if (!$departmentsResult) {
+    die("Unable to load departments: " . $conn->error);
+}
+$departments = $departmentsResult->fetch_all(MYSQLI_ASSOC);
+
+$programsResult = $conn->query("SELECT id, course_id, name FROM course_programs ORDER BY name ASC");
+if (!$programsResult) {
+    die("Unable to load courses and programs: " . $conn->error);
+}
+$programs = $programsResult->fetch_all(MYSQLI_ASSOC);
+
 $filterSql = "
     WHERE (? IS NULL OR p.payment_date >= ?)
       AND (? IS NULL OR p.payment_date <= ?)
       AND (? = 'All' OR p.status = ?)
+      AND (? IS NULL OR s.department_id = ?)
+      AND (? IS NULL OR s.program_id = ?)
 ";
 $fromDateFilter = $fromDate === "" ? null : $fromDate;
 $toDateFilter = $toDate === "" ? null : $toDate;
+$departmentFilter = $departmentId === "" ? null : $departmentId;
+$programFilter = $programId === "" ? null : $programId;
 
 $summaryStmt = $conn->prepare(
     "SELECT
@@ -68,6 +100,7 @@ $summaryStmt = $conn->prepare(
         COUNT(CASE WHEN p.status = 'Pending' THEN 1 END) AS pending_transactions,
         COUNT(CASE WHEN p.status = 'Cancelled' THEN 1 END) AS cancelled_transactions
      FROM payments p
+     LEFT JOIN students s ON p.student_id = s.id
      $filterSql"
 );
 
@@ -76,13 +109,17 @@ if (!$summaryStmt) {
 }
 
 $summaryStmt->bind_param(
-    "ssssss",
+    "ssssssssss",
     $fromDateFilter,
     $fromDate,
     $toDateFilter,
     $toDate,
     $status,
-    $status
+    $status,
+    $departmentFilter,
+    $departmentId,
+    $programFilter,
+    $programId
 );
 
 if (!$summaryStmt->execute()) {
@@ -98,12 +135,16 @@ $paymentsStmt = $conn->prepare(
         p.payment_date,
         s.student_id AS student_number,
         CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name) AS student_name,
+        d.name AS department_name,
+        c.name AS program_name,
         p.payment_type,
         p.payment_method,
         p.amount,
         p.status
      FROM payments p
      LEFT JOIN students s ON p.student_id = s.id
+     LEFT JOIN departments d ON s.department_id = d.id
+     LEFT JOIN course_programs c ON s.program_id = c.id
      $filterSql
      ORDER BY p.payment_date DESC, p.id DESC"
 );
@@ -113,13 +154,17 @@ if (!$paymentsStmt) {
 }
 
 $paymentsStmt->bind_param(
-    "ssssss",
+    "ssssssssss",
     $fromDateFilter,
     $fromDate,
     $toDateFilter,
     $toDate,
     $status,
-    $status
+    $status,
+    $departmentFilter,
+    $departmentId,
+    $programFilter,
+    $programId
 );
 
 if (!$paymentsStmt->execute()) {
@@ -139,7 +184,7 @@ if ($export === "csv") {
     }
 
     fwrite($output, "\xEF\xBB\xBF");
-    fputcsv($output, ["Reference", "Date", "Student ID", "Student", "Payment Type", "Method", "Amount", "Status"]);
+    fputcsv($output, ["Reference", "Date", "Student ID", "Student", "Department", "Program/Course", "Payment Type", "Method", "Amount", "Status"]);
 
     $safeCsvText = static function (?string $value): string {
         $value = $value ?? "";
@@ -157,6 +202,8 @@ if ($export === "csv") {
             $payment["payment_date"],
             $safeCsvText($payment["student_number"]),
             $safeCsvText($payment["student_name"]),
+            $safeCsvText($payment["department_name"]),
+            $safeCsvText($payment["program_name"]),
             $safeCsvText($payment["payment_type"]),
             $safeCsvText($payment["payment_method"]),
             $payment["amount"],
@@ -178,6 +225,9 @@ if ($export === "csv") {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reports - Online Resibo</title>
     <link rel="stylesheet" href="../adminlte/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-regular-rounded/css/uicons-regular-rounded.css">
+    <link rel="stylesheet" href="../assets/css/sidebar.css">
+    <script defer src="../assets/js/sidebar-icons.js"></script>
     <link rel="stylesheet" href="../assets/css/table-gridlines.css">
     <link rel="stylesheet" href="../assets/css/sweetalert2.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -202,7 +252,7 @@ if ($export === "csv") {
     </style>
 </head>
 
-<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+<body class="layout-fixed sidebar-expand-lg sidebar-mini bg-body-tertiary">
 <div class="app-wrapper">
     <nav class="app-header navbar navbar-expand bg-body">
         <div class="container-fluid">
@@ -286,17 +336,17 @@ if ($export === "csv") {
                     <div class="card-body">
                         <form method="GET" action="index.php">
                             <div class="row align-items-end">
-                                <div class="col-md-3 mb-3">
+                                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
                                     <label for="from_date" class="form-label">From date</label>
                                     <input type="date" id="from_date" name="from_date" class="form-control"
                                         value="<?= htmlspecialchars($fromDate) ?>">
                                 </div>
-                                <div class="col-md-3 mb-3">
+                                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
                                     <label for="to_date" class="form-label">To date</label>
                                     <input type="date" id="to_date" name="to_date" class="form-control"
                                         value="<?= htmlspecialchars($toDate) ?>">
                                 </div>
-                                <div class="col-md-3 mb-3">
+                                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
                                     <label for="status" class="form-label">Payment status</label>
                                     <select id="status" name="status" class="form-select">
                                         <?php foreach (["All", "Paid", "Pending", "Cancelled"] as $statusOption): ?>
@@ -307,7 +357,31 @@ if ($export === "csv") {
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                                <div class="col-md-3 mb-3 d-flex gap-2">
+                                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+                                    <label for="department_id" class="form-label">Department</label>
+                                    <select id="department_id" name="department_id" class="form-select">
+                                        <option value="">All departments</option>
+                                        <?php foreach ($departments as $department): ?>
+                                            <option value="<?= (int) $department["id"] ?>"
+                                                <?= $departmentId === (string) $department["id"] ? "selected" : "" ?>>
+                                                <?= htmlspecialchars($department["code"] . " - " . $department["name"]) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+                                    <label for="program_id" class="form-label">Program / Course</label>
+                                    <select id="program_id" name="program_id" class="form-select">
+                                        <option value="">All programs / courses</option>
+                                        <?php foreach ($programs as $program): ?>
+                                            <option value="<?= (int) $program["id"] ?>"
+                                                <?= $programId === (string) $program["id"] ? "selected" : "" ?>>
+                                                <?= htmlspecialchars($program["course_id"] . " - " . $program["name"]) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-xl-2 col-lg-4 col-md-6 mb-3 report-filter-actions d-flex flex-wrap gap-2">
                                     <button type="submit" class="btn btn-primary flex-fill">
                                         <i class="bi bi-search"></i> Generate
                                     </button>
@@ -355,7 +429,7 @@ if ($export === "csv") {
                         <h3 class="card-title mb-0">Payment Details</h3>
                         <div class="report-actions d-flex" style="gap: 5px; margin-left: 0;">
                             <a class="btn btn-success btn-sm"
-                                href="?from_date=<?= urlencode($fromDate) ?>&amp;to_date=<?= urlencode($toDate) ?>&amp;status=<?= urlencode($status) ?>&amp;export=csv">
+                                href="?from_date=<?= urlencode($fromDate) ?>&amp;to_date=<?= urlencode($toDate) ?>&amp;status=<?= urlencode($status) ?>&amp;department_id=<?= urlencode($departmentId) ?>&amp;program_id=<?= urlencode($programId) ?>&amp;export=csv">
                                 <i class="bi bi-download"></i> Export CSV
                             </a>
                             <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
@@ -372,6 +446,8 @@ if ($export === "csv") {
                                         <th>Date</th>
                                         <th>Student ID</th>
                                         <th>Student Name</th>
+                                        <th>Department</th>
+                                        <th>Program / Course</th>
                                         <th>Payment Type</th>
                                         <th>Method</th>
                                         <th class="text-end">Amount</th>
@@ -393,6 +469,8 @@ if ($export === "csv") {
                                                 <td><?= htmlspecialchars($payment["payment_date"]) ?></td>
                                                 <td><?= htmlspecialchars($payment["student_number"] ?? "—") ?></td>
                                                 <td><?= htmlspecialchars($payment["student_name"] ?? "Unknown Student") ?></td>
+                                                <td><?= htmlspecialchars($payment["department_name"] ?? "—") ?></td>
+                                                <td><?= htmlspecialchars($payment["program_name"] ?? "—") ?></td>
                                                 <td><?= htmlspecialchars($payment["payment_type"]) ?></td>
                                                 <td><?= htmlspecialchars($payment["payment_method"]) ?></td>
                                                 <td class="text-end">₱<?= number_format((float) $payment["amount"], 2) ?></td>
@@ -401,7 +479,7 @@ if ($export === "csv") {
                                         <?php endwhile; ?>
                                     <?php else: ?>
                                         <tr>
-                                            <td colspan="8" class="text-center text-muted py-4">No payments match the selected filters.</td>
+                                            <td colspan="10" class="text-center text-muted py-4">No payments match the selected filters.</td>
                                         </tr>
                                     <?php endif; ?>
                                 </tbody>
