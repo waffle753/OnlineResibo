@@ -7,6 +7,13 @@ const PDFDocument = require("pdfkit");
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 
 function readPayment() {
+    const jobPath = process.argv[2];
+    if (jobPath) {
+        return fs.promises.readFile(jobPath, "utf8")
+            .then(input => JSON.parse(input))
+            .finally(() => fs.promises.unlink(jobPath));
+    }
+
     let input = "";
     process.stdin.setEncoding("utf8");
     process.stdin.on("data", chunk => {
@@ -18,7 +25,7 @@ function readPayment() {
             try {
                 resolve(JSON.parse(input));
             } catch {
-                reject(new Error("Invalid payment data supplied to the mailer."));
+                reject(new Error("Invalid payment data supplied to the email server."));
             }
         });
         process.stdin.on("error", reject);
@@ -41,24 +48,24 @@ function createReceiptPdf(payment) {
         const pageWidth = document.page.width;
         const logoPath = path.join(__dirname, "..", "image", "snnmmcs.png");
         if (fs.existsSync(logoPath)) {
-            document.image(logoPath, 42, 32, { fit: [76, 58] });
+            document.image(logoPath, (pageWidth - 76) / 2, 14, { fit: [76, 58] });
         }
 
-        document.font("Helvetica-Bold").fontSize(20).text("PAYMENT RECEIPT", 135, 42, {
+        document.font("Helvetica-Bold").fontSize(20).text("PAYMENT RECEIPT", 42, 77, {
             align: "center",
-            width: pageWidth - 177
+            width: pageWidth - 84
         });
-        document.font("Helvetica").fontSize(10).text("Online Resibo", 135, 68, {
+        document.font("Helvetica").fontSize(10).text("Online Resibo", 42, 101, {
             align: "center",
-            width: pageWidth - 177
+            width: pageWidth - 84
         });
 
-        document.moveTo(42, 108).lineTo(pageWidth - 42, 108).stroke("#64748b");
+        document.moveTo(42, 128).lineTo(pageWidth - 42, 128).stroke("#64748b");
 
         const leftX = 48;
         const rightX = pageWidth / 2 + 12;
         const labelWidth = 112;
-        const rowStart = 128;
+        const rowStart = 145;
         const rowGap = 30;
         const leftDetails = [
             ["Reference No.", payment.reference_no],
@@ -87,7 +94,7 @@ function createReceiptPdf(payment) {
         drawDetails(leftDetails, leftX);
         drawDetails(rightDetails, rightX);
 
-        const amountY = 250;
+        const amountY = 255;
         document.roundedRect(42, amountY, pageWidth - 84, 58, 7).fill("#eff6ff");
         document.font("Helvetica-Bold").fontSize(12).fillColor("#1e3a8a")
             .text("AMOUNT PAID", 58, amountY + 21);
@@ -101,7 +108,7 @@ function createReceiptPdf(payment) {
             });
 
         document.fillColor("#000000").font("Helvetica").fontSize(9)
-            .text("Thank you for your payment.", 42, 325, {
+            .text("Thank you for your payment.", 42, 330, {
                 align: "center",
                 width: pageWidth - 84
             });
@@ -191,6 +198,12 @@ function escapeHtml(value) {
 }
 
 if (require.main === module) {
+    if (process.stdin.isTTY && !process.argv[2]) {
+        process.stderr.write(
+            "Online Resibo email worker is running and waiting for a payment job on stdin. Press Ctrl+C to stop.\n"
+        );
+    }
+
     main().catch(error => {
         process.stderr.write(`${error.message}\n`);
         process.stdout.write(JSON.stringify({ sent: false }));

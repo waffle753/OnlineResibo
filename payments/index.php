@@ -129,21 +129,17 @@ $paymentsResult = $conn->query($paymentsSql);
                     </a>
                 </li>
 
-                <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
                 <li class="nav-item">
                     <a href="../programs/index.php" class="nav-link">
                         <p>📚 &nbsp; Courses / Programs</p>
                     </a>
                 </li>
-                <?php endif; ?>
 
-                <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
                 <li class="nav-item">
                     <a href="../departments/index.php" class="nav-link">
                         <p>🏢 &nbsp; Departments</p>
                     </a>
                 </li>
-                <?php endif; ?>
 
                 <li class="nav-item">
                     <a href="index.php" class="nav-link active">
@@ -151,13 +147,11 @@ $paymentsResult = $conn->query($paymentsSql);
                     </a>
                 </li>
 
-                <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
                 <li class="nav-item">
                     <a href="../payment-types/index.php" class="nav-link">
                         <p>🏷️ &nbsp; Payment Types</p>
                     </a>
                 </li>
-                <?php endif; ?>
 
                 <li class="nav-item">
                     <a href="../receipts/index.php" class="nav-link">
@@ -180,6 +174,12 @@ $paymentsResult = $conn->query($paymentsSql);
                 <?php endif; ?>
 
                 <li class="nav-header">SYSTEM</li>
+
+                <li class="nav-item">
+                    <a href="../user-manual.php" class="nav-link">
+                        <p>User Manual</p>
+                    </a>
+                </li>
 
                 <li class="nav-item">
                     <a href="../auth/logout.php" class="nav-link text-danger">
@@ -546,6 +546,7 @@ $paymentsResult = $conn->query($paymentsSql);
 <footer class="app-footer">
     <strong>Online Resibo</strong>
     &copy; 2026
+    <span class="ms-2">Created by <strong>Kent David T. Abejo</strong></span>
 </footer>
 
 </div>
@@ -912,21 +913,6 @@ EDIT PAYMENT MODAL
 <script>
 document.addEventListener("DOMContentLoaded", function() {
 
-    /* SEARCH */
-    const search = document.getElementById("paymentSearch");
-
-    if (search) {
-        search.addEventListener("keyup", function() {
-
-            const value = this.value.toLowerCase().trim();
-
-            document.querySelectorAll("#paymentTable tbody tr").forEach(function(row) {
-                row.style.display = row.textContent.toLowerCase().includes(value) ? "" : "none";
-            });
-
-        });
-    }
-
     /* VIEW PAYMENT */
     document.querySelectorAll(".view-payment-btn").forEach(function(button) {
 
@@ -1065,6 +1051,8 @@ document.addEventListener("DOMContentLoaded", function() {
     const emailStatus = params.get("email");
     const emailMessage = emailStatus === "sent"
         ? "The student received a printable PDF receipt by email."
+        : emailStatus === "queued"
+            ? "The payment was saved. The receipt email is being sent in the background."
         : emailStatus === "failed"
             ? "The payment was saved, but the receipt email could not be sent. Check the server mailer configuration."
             : emailStatus === "skipped"
@@ -1075,7 +1063,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
         Swal.fire({
             icon: emailStatus === "failed" ? "warning" : "success",
-            title: emailStatus === "failed" ? "Payment saved; email failed" : "Payment Added Successfully!",
+            title: emailStatus === "failed"
+                ? "Payment saved; email failed"
+                : emailStatus === "queued" ? "Payment saved; email queued" : "Payment Added Successfully!",
             text: ["The payment has been recorded.", emailMessage].filter(Boolean).join(" "),
             timer: 2500,
             timerProgressBar: true
@@ -1087,7 +1077,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
         Swal.fire({
             icon: emailStatus === "failed" ? "warning" : "success",
-            title: emailStatus === "failed" ? "Payment saved; email failed" : "Payment Updated Successfully!",
+            title: emailStatus === "failed"
+                ? "Payment saved; email failed"
+                : emailStatus === "queued" ? "Payment saved; email queued" : "Payment Updated Successfully!",
             text: ["The payment information has been updated.", emailMessage].filter(Boolean).join(" "),
             timer: 2500,
             timerProgressBar: true
@@ -1146,5 +1138,6 @@ document.addEventListener("DOMContentLoaded", function() {
 </script>
 <script src="../assets/js/disable-unchanged-submit.js"></script>
 
+<script src="../assets/js/table-pagination.js"></script>
 </body>
 </html>

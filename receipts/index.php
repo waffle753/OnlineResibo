@@ -101,21 +101,17 @@ $result = $conn->query($sql);
                             </a>
                         </li>
 
-                        <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
-                            <li class="nav-item">
-                                <a href="../programs/index.php" class="nav-link">
-                                    <p>📚 &nbsp; Courses / Programs</p>
-                                </a>
-                            </li>
-                        <?php endif; ?>
+                        <li class="nav-item">
+                            <a href="../programs/index.php" class="nav-link">
+                                <p>📚 &nbsp; Courses / Programs</p>
+                            </a>
+                        </li>
 
-                        <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
-                            <li class="nav-item">
-                                <a href="../departments/index.php" class="nav-link">
-                                    <p>🏢 &nbsp; Departments</p>
-                                </a>
-                            </li>
-                        <?php endif; ?>
+                        <li class="nav-item">
+                            <a href="../departments/index.php" class="nav-link">
+                                <p>🏢 &nbsp; Departments</p>
+                            </a>
+                        </li>
 
                         <li class="nav-item">
                             <a href="../payments/index.php" class="nav-link">
@@ -123,13 +119,11 @@ $result = $conn->query($sql);
                             </a>
                         </li>
 
-                        <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
-                            <li class="nav-item">
-                                <a href="../payment-types/index.php" class="nav-link">
-                                    <p>🏷️ &nbsp; Payment Types</p>
-                                </a>
-                            </li>
-                        <?php endif; ?>
+                        <li class="nav-item">
+                            <a href="../payment-types/index.php" class="nav-link">
+                                <p>🏷️ &nbsp; Payment Types</p>
+                            </a>
+                        </li>
 
                         <li class="nav-item">
                             <a href="index.php" class="nav-link active">
@@ -152,6 +146,12 @@ $result = $conn->query($sql);
                         <?php endif; ?>
 
                         <li class="nav-header">SYSTEM</li>
+
+                        <li class="nav-item">
+                            <a href="../user-manual.php" class="nav-link">
+                                <p>User Manual</p>
+                            </a>
+                        </li>
 
                         <li class="nav-item">
                             <a href="../auth/logout.php" class="nav-link text-danger">
@@ -334,6 +334,7 @@ $result = $conn->query($sql);
         <footer class="app-footer">
             <strong>Online Resibo</strong>
             &copy; 2026
+            <span class="ms-2">Created by <strong>Kent David T. Abejo</strong></span>
         </footer>
 
     </div>
@@ -448,21 +449,6 @@ $result = $conn->query($sql);
     <script src="../adminlte/dist/js/adminlte.min.js"></script>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const search = document.getElementById("receiptSearch");
-
-            if (search) {
-                search.addEventListener("keyup", function () {
-                    const value = this.value.toLowerCase().trim();
-                    const rows = document.querySelectorAll("#receiptTable tbody tr");
-
-                    rows.forEach(function (row) {
-                        row.style.display = row.textContent.toLowerCase().includes(value) ? "" : "none";
-                    });
-                });
-            }
-        });
-
         const viewButtons = document.querySelectorAll(".view-receipt-btn");
 
         viewButtons.forEach(function (button) {
@@ -488,6 +474,7 @@ $result = $conn->query($sql);
         });
     </script>
 
+<script src="../assets/js/table-pagination.js"></script>
 </body>
 
 </html>

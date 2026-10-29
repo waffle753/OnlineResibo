@@ -6,11 +6,6 @@ if (!isset($_SESSION["user_id"])) {
     exit();
 }
 
-if (($_SESSION["role"] ?? "") !== "Admin") {
-    http_response_code(403);
-    exit("Only administrators can manage departments.");
-}
-
 require_once "../config/database.php";
 
 if (($_SERVER["REQUEST_METHOD"] ?? "GET") === "POST") {
@@ -196,6 +191,7 @@ $messages = [
                         <li class="nav-item"><a href="../users/index.php" class="nav-link"><p>👤 &nbsp; Users</p></a></li>
                     <?php endif; ?>
                     <li class="nav-header">SYSTEM</li>
+                    <li class="nav-item"><a href="../user-manual.php" class="nav-link"><p>User Manual</p></a></li>
                     <li class="nav-item"><a href="../auth/logout.php" class="nav-link text-danger"><p>🚪 &nbsp; Logout</p></a></li>
                 </ul>
             </nav>
@@ -308,7 +304,7 @@ $messages = [
         </div>
     </div>
 
-    <footer class="app-footer"><strong>Online Resibo</strong> &copy; 2026<div class="float-end d-none d-sm-inline">School Payment Management System</div></footer>
+    <footer class="app-footer"><strong>Online Resibo</strong> &copy; 2026 <span class="ms-2">Created by <strong>Kent David T. Abejo</strong></span><div class="float-end d-none d-sm-inline">School Payment Management System</div></footer>
 </div>
 <script src="../adminlte/dist/js/adminlte.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -358,5 +354,6 @@ if (messageKey && messages[messageKey]) {
 }
 </script>
 <script src="../assets/js/disable-unchanged-submit.js"></script>
+<script src="../assets/js/table-pagination.js"></script>
 </body>
 </html>

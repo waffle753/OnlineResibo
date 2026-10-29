@@ -8,6 +8,7 @@
         'payment types': 'fi-rr-tags',
         receipts: 'fi-rr-receipt',
         reports: 'fi-rr-chart-histogram',
+        'user manual': 'fi-rr-book-alt',
         users: 'fi-rr-users',
         logout: 'fi-rr-sign-out-alt'
     };

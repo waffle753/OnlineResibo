@@ -185,21 +185,17 @@ $recentPaymentsResult = $conn->query(
                             </a>
                         </li>
 
-                        <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
-                            <li class="nav-item">
-                                <a href="programs/index.php" class="nav-link">
-                                    <p>📚 &nbsp; Courses / Programs</p>
-                                </a>
-                            </li>
-                        <?php endif; ?>
+                        <li class="nav-item">
+                            <a href="programs/index.php" class="nav-link">
+                                <p>📚 &nbsp; Courses / Programs</p>
+                            </a>
+                        </li>
 
-                        <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
-                            <li class="nav-item">
-                                <a href="departments/index.php" class="nav-link">
-                                    <p>🏢 &nbsp; Departments</p>
-                                </a>
-                            </li>
-                        <?php endif; ?>
+                        <li class="nav-item">
+                            <a href="departments/index.php" class="nav-link">
+                                <p>🏢 &nbsp; Departments</p>
+                            </a>
+                        </li>
 
                         <!-- PAYMENTS -->
                         <li class="nav-item">
@@ -208,13 +204,11 @@ $recentPaymentsResult = $conn->query(
                             </a>
                         </li>
 
-                        <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
-                            <li class="nav-item">
-                                <a href="payment-types/index.php" class="nav-link">
-                                    <p>🏷️ &nbsp; Payment Types</p>
-                                </a>
-                            </li>
-                        <?php endif; ?>
+                        <li class="nav-item">
+                            <a href="payment-types/index.php" class="nav-link">
+                                <p>🏷️ &nbsp; Payment Types</p>
+                            </a>
+                        </li>
 
                         <!-- RECEIPTS -->
                         <li class="nav-item">
@@ -242,6 +236,12 @@ $recentPaymentsResult = $conn->query(
                         <!-- SYSTEM -->
                         <li class="nav-header">
                             SYSTEM
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="user-manual.php" class="nav-link">
+                                <p>User Manual</p>
+                            </a>
                         </li>
 
                         <!-- LOGOUT -->
@@ -520,6 +520,7 @@ $recentPaymentsResult = $conn->query(
             </strong>
 
             &copy; 2026
+            <span class="ms-2">Created by <strong>Kent David T. Abejo</strong></span>
 
             <div class="float-end d-none d-sm-inline">
 

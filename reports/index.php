@@ -14,6 +14,8 @@ $status = $_GET["status"] ?? "All";
 $departmentId = $_GET["department_id"] ?? "";
 $programId = $_GET["program_id"] ?? "";
 $export = $_GET["export"] ?? "";
+$pageInput = $_GET["page"] ?? "1";
+$pageSizeInput = $_GET["page_size"] ?? "10";
 
 if (
     !is_string($fromDate)
@@ -22,8 +24,22 @@ if (
     || !is_string($departmentId)
     || !is_string($programId)
     || !is_string($export)
+    || !is_string($pageInput)
+    || !is_string($pageSizeInput)
 ) {
     header("Location: index.php?report_error=invalid_filters");
+    exit();
+}
+
+$page = filter_var($pageInput, FILTER_VALIDATE_INT, ["options" => ["min_range" => 1]]);
+if ($page === false) {
+    header("Location: index.php?report_error=invalid_page");
+    exit();
+}
+
+$pageSize = filter_var($pageSizeInput, FILTER_VALIDATE_INT);
+if (!in_array($pageSize, [10, 25, 50, 100], true)) {
+    header("Location: index.php?report_error=invalid_page_size");
     exit();
 }
 
@@ -129,6 +145,23 @@ if (!$summaryStmt->execute()) {
 $summary = $summaryStmt->get_result()->fetch_assoc();
 $summaryStmt->close();
 
+$totalRows = (int) $summary["total_transactions"];
+$totalPages = max(1, (int) ceil($totalRows / $pageSize));
+$page = min($page, $totalPages);
+$offset = ($page - 1) * $pageSize;
+
+$paginationQuery = http_build_query([
+    "from_date" => $fromDate,
+    "to_date" => $toDate,
+    "status" => $status,
+    "department_id" => $departmentId,
+    "program_id" => $programId,
+    "page_size" => $pageSize
+]);
+
+$paginationStart = max(1, $page - 2);
+$paginationEnd = min($totalPages, $page + 2);
+
 $paymentsStmt = $conn->prepare(
     "SELECT
         p.reference_no,
@@ -146,26 +179,45 @@ $paymentsStmt = $conn->prepare(
      LEFT JOIN departments d ON s.department_id = d.id
      LEFT JOIN course_programs c ON s.program_id = c.id
      $filterSql
-     ORDER BY p.payment_date DESC, p.id DESC"
+     ORDER BY p.payment_date DESC, p.id DESC" .
+    ($export === "csv" ? "" : " LIMIT ? OFFSET ?")
 );
 
 if (!$paymentsStmt) {
     die("Unable to prepare report details: " . $conn->error);
 }
 
-$paymentsStmt->bind_param(
-    "ssssssssss",
-    $fromDateFilter,
-    $fromDate,
-    $toDateFilter,
-    $toDate,
-    $status,
-    $status,
-    $departmentFilter,
-    $departmentId,
-    $programFilter,
-    $programId
-);
+if ($export === "csv") {
+    $paymentsStmt->bind_param(
+        "ssssssssss",
+        $fromDateFilter,
+        $fromDate,
+        $toDateFilter,
+        $toDate,
+        $status,
+        $status,
+        $departmentFilter,
+        $departmentId,
+        $programFilter,
+        $programId
+    );
+} else {
+    $paymentsStmt->bind_param(
+        "ssssssssssii",
+        $fromDateFilter,
+        $fromDate,
+        $toDateFilter,
+        $toDate,
+        $status,
+        $status,
+        $departmentFilter,
+        $departmentId,
+        $programFilter,
+        $programId,
+        $pageSize,
+        $offset
+    );
+}
 
 if (!$paymentsStmt->execute()) {
     die("Unable to load report details: " . $paymentsStmt->error);
@@ -237,7 +289,9 @@ if ($export === "csv") {
             .app-sidebar,
             .app-footer,
             .report-filters,
-            .report-actions {
+            .report-actions,
+            .report-page-size,
+            .report-pagination {
                 display: none !important;
             }
 
@@ -290,22 +344,17 @@ if ($export === "csv") {
                 <ul class="nav sidebar-menu flex-column">
                     <li class="nav-item"><a href="../dashboard.php" class="nav-link"><p>🏠 &nbsp; Dashboard</p></a></li>
                     <li class="nav-item"><a href="../students/index.php" class="nav-link"><p>👨‍🎓 &nbsp; Students</p></a></li>
-                    <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
-                        <li class="nav-item"><a href="../programs/index.php" class="nav-link"><p>📚 &nbsp; Courses / Programs</p></a></li>
-                    <?php endif; ?>
-                    <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
-                        <li class="nav-item"><a href="../departments/index.php" class="nav-link"><p>🏢 &nbsp; Departments</p></a></li>
-                    <?php endif; ?>
+                    <li class="nav-item"><a href="../programs/index.php" class="nav-link"><p>📚 &nbsp; Courses / Programs</p></a></li>
+                    <li class="nav-item"><a href="../departments/index.php" class="nav-link"><p>🏢 &nbsp; Departments</p></a></li>
                     <li class="nav-item"><a href="../payments/index.php" class="nav-link"><p>💳 &nbsp; Payments</p></a></li>
-                    <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
-                        <li class="nav-item"><a href="../payment-types/index.php" class="nav-link"><p>🏷️ &nbsp; Payment Types</p></a></li>
-                    <?php endif; ?>
+                    <li class="nav-item"><a href="../payment-types/index.php" class="nav-link"><p>🏷️ &nbsp; Payment Types</p></a></li>
                     <li class="nav-item"><a href="../receipts/index.php" class="nav-link"><p>🧾 &nbsp; Receipts</p></a></li>
                     <li class="nav-item"><a href="index.php" class="nav-link active"><p>📊 &nbsp; Reports</p></a></li>
                     <?php if (($_SESSION["role"] ?? "") === "Admin"): ?>
                         <li class="nav-item"><a href="../users/index.php" class="nav-link"><p>👤 &nbsp; Users</p></a></li>
                     <?php endif; ?>
                     <li class="nav-header">SYSTEM</li>
+                    <li class="nav-item"><a href="../user-manual.php" class="nav-link"><p>User Manual</p></a></li>
                     <li class="nav-item"><a href="../auth/logout.php" class="nav-link text-danger"><p>🚪 &nbsp; Logout</p></a></li>
                 </ul>
             </nav>
@@ -426,8 +475,24 @@ if ($export === "csv") {
 
                 <div class="card">
                     <div class="card-header d-flex align-items-center flex-wrap p-3" style="gap: 5px;">
-                        <h3 class="card-title mb-0">Payment Details</h3>
-                        <div class="report-actions d-flex" style="gap: 5px; margin-left: 0;">
+                    <h3 class="card-title mb-0">Payment Details</h3>
+                    <form method="GET" action="index.php" class="d-flex align-items-center gap-2 ms-auto report-page-size">
+                        <input type="hidden" name="from_date" value="<?= htmlspecialchars($fromDate) ?>">
+                        <input type="hidden" name="to_date" value="<?= htmlspecialchars($toDate) ?>">
+                        <input type="hidden" name="status" value="<?= htmlspecialchars($status) ?>">
+                        <input type="hidden" name="department_id" value="<?= htmlspecialchars($departmentId) ?>">
+                        <input type="hidden" name="program_id" value="<?= htmlspecialchars($programId) ?>">
+                        <input type="hidden" name="page" value="1">
+                        <label for="report_page_size" class="small text-muted mb-0">Rows per page</label>
+                        <select id="report_page_size" name="page_size" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                            <?php foreach ([10, 25, 50, 100] as $availablePageSize): ?>
+                                <option value="<?= $availablePageSize ?>" <?= $pageSize === $availablePageSize ? "selected" : "" ?>>
+                                    <?= $availablePageSize ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </form>
+                    <div class="report-actions d-flex" style="gap: 5px; margin-left: 0;">
                             <a class="btn btn-success btn-sm"
                                 href="?from_date=<?= urlencode($fromDate) ?>&amp;to_date=<?= urlencode($toDate) ?>&amp;status=<?= urlencode($status) ?>&amp;department_id=<?= urlencode($departmentId) ?>&amp;program_id=<?= urlencode($programId) ?>&amp;export=csv">
                                 <i class="bi bi-download"></i> Export CSV
@@ -442,6 +507,7 @@ if ($export === "csv") {
                             <table class="table table-hover table-striped mb-0">
                                 <thead>
                                     <tr>
+                                        <th>#</th>
                                         <th>Reference</th>
                                         <th>Date</th>
                                         <th>Student ID</th>
@@ -455,6 +521,7 @@ if ($export === "csv") {
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    <?php $rowNumber = $offset + 1; ?>
                                     <?php if ($paymentsResult->num_rows > 0): ?>
                                         <?php while ($payment = $paymentsResult->fetch_assoc()): ?>
                                             <?php
@@ -465,6 +532,7 @@ if ($export === "csv") {
                                             };
                                             ?>
                                             <tr>
+                                                <td><?= $rowNumber++ ?></td>
                                                 <td><?= htmlspecialchars($payment["reference_no"]) ?></td>
                                                 <td><?= htmlspecialchars($payment["payment_date"]) ?></td>
                                                 <td><?= htmlspecialchars($payment["student_number"] ?? "—") ?></td>
@@ -479,15 +547,40 @@ if ($export === "csv") {
                                         <?php endwhile; ?>
                                     <?php else: ?>
                                         <tr>
-                                            <td colspan="10" class="text-center text-muted py-4">No payments match the selected filters.</td>
+                                            <td colspan="11" class="text-center text-muted py-4">No payments match the selected filters.</td>
                                         </tr>
                                     <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
                     </div>
-                    <div class="card-footer text-muted">
-                        <?= number_format((int) $summary["cancelled_transactions"]) ?> cancelled transaction(s) are included in the report.
+                    <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="text-muted">
+                            Showing <?= number_format($totalRows > 0 ? $offset + 1 : 0) ?>–<?= number_format(min($offset + $pageSize, $totalRows)) ?>
+                            of <?= number_format($totalRows) ?> entries.
+                            <?= number_format((int) $summary["cancelled_transactions"]) ?> cancelled transaction(s) are included in the report.
+                        </div>
+                        <div class="report-pagination d-flex align-items-center flex-wrap gap-2 ms-auto">
+                            <?php if ($totalPages > 1): ?>
+                                <nav aria-label="Report pages">
+                                <ul class="pagination pagination-sm mb-0">
+                                    <li class="page-item <?= $page <= 1 ? "disabled" : "" ?>">
+                                        <a class="page-link" href="?<?= htmlspecialchars($paginationQuery) ?>&amp;page=<?= max(1, $page - 1) ?>" aria-label="Previous page">Previous</a>
+                                    </li>
+                                    <?php for ($pageNumber = $paginationStart; $pageNumber <= $paginationEnd; $pageNumber++): ?>
+                                        <li class="page-item <?= $pageNumber === $page ? "active" : "" ?>">
+                                            <a class="page-link" href="?<?= htmlspecialchars($paginationQuery) ?>&amp;page=<?= $pageNumber ?>" <?= $pageNumber === $page ? 'aria-current="page"' : "" ?>>
+                                                <?= $pageNumber ?>
+                                            </a>
+                                        </li>
+                                    <?php endfor; ?>
+                                    <li class="page-item <?= $page >= $totalPages ? "disabled" : "" ?>">
+                                        <a class="page-link" href="?<?= htmlspecialchars($paginationQuery) ?>&amp;page=<?= min($totalPages, $page + 1) ?>" aria-label="Next page">Next</a>
+                                    </li>
+                                </ul>
+                                </nav>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -496,6 +589,7 @@ if ($export === "csv") {
 
     <footer class="app-footer">
         <strong>Online Resibo</strong> &copy; 2026
+        <span class="ms-2">Created by <strong>Kent David T. Abejo</strong></span>
         <div class="float-end d-none d-sm-inline">School Payment Management System</div>
     </footer>
 </div>
@@ -505,6 +599,8 @@ if ($export === "csv") {
 <script>
 const reportErrors = {
     invalid_filters: "The submitted report filters are invalid.",
+    invalid_page: "Choose a valid report page.",
+    invalid_page_size: "Choose a valid number of report rows per page.",
     invalid_dates: "Enter valid dates for the report.",
     date_order: "The start date cannot be after the end date.",
     invalid_status: "Choose a valid payment status.",

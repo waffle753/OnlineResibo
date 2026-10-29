@@ -226,6 +226,7 @@ $flashMessage = is_string($messageKey) ? ($messages[$messageKey] ?? null) : null
                     <li class="nav-item"><a href="../reports/index.php" class="nav-link"><p>📊 &nbsp; Reports</p></a></li>
                     <li class="nav-item"><a href="index.php" class="nav-link active"><p>👤 &nbsp; Users</p></a></li>
                     <li class="nav-header">SYSTEM</li>
+                    <li class="nav-item"><a href="../user-manual.php" class="nav-link"><p>User Manual</p></a></li>
                     <li class="nav-item"><a href="../auth/logout.php" class="nav-link text-danger"><p>🚪 &nbsp; Logout</p></a></li>
                 </ul>
             </nav>
@@ -444,5 +445,6 @@ $flashMessage = is_string($messageKey) ? ($messages[$messageKey] ?? null) : null
     });
 </script>
 <script src="../assets/js/disable-unchanged-submit.js"></script>
+<script src="../assets/js/table-pagination.js"></script>
 </body>
 </html>
