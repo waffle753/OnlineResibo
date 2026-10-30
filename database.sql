@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS `payments` (
   `payment_method` VARCHAR(50) NOT NULL,
   `status` ENUM('Paid', 'Pending', 'Cancelled') NOT NULL DEFAULT 'Paid',
   `reference_no` VARCHAR(32) NOT NULL,
+  `issued_by` VARCHAR(255) DEFAULT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_payments_reference_no` (`reference_no`),

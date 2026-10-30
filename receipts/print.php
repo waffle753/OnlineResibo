@@ -53,7 +53,7 @@ $stmt->close();
 
     <style>
         @page {
-            size: 8.5in 5.5in landscape;
+            size: A4 landscape;
             margin: 0;
         }
 
@@ -66,75 +66,97 @@ $stmt->close();
             padding: 0;
             font-family: Arial, sans-serif;
             background: white;
-            font-size: 13px;
+            font-size: 7px;
+        }
+
+        .page {
+            width: 297mm;
+            height: 210mm;
         }
 
         .receipt {
-            width: 7.2in;
-            height: 3.8in;
-            margin: 0.15in;
-            padding: 0.25in 0.3in;
-            border: 1px solid #000;
+            width: 148.5mm;
+            height: 52.5mm;
+            margin: 0;
+            padding: 2mm 3mm;
+            border: 0.25mm solid #333;
+            display: flex;
+            flex-direction: column;
+            break-inside: avoid;
         }
 
         .header {
             text-align: center;
-            margin-bottom: 12px;
+            margin-bottom: 1.5mm;
         }
 
-        .header h1 {
-            margin: 0;
-            font-size: 23px;
-        }
-
-        .header p {
-            margin: 4px 0 0;
-            font-size: 12px;
+        .label {
+            color: #222;
+            font-size: 7px;
+            font-style: italic;
+            font-weight: 700;
+            white-space: nowrap;
         }
 
         .line {
-            border-top: 1px solid #000;
-            margin: 10px 0 12px;
+            border-top: 0.2mm solid #333;
+            margin: 0 0 1.5mm;
         }
 
         .info {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            column-gap: 30px;
+            column-gap: 4mm;
+        }
+
+        .info-column {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8mm;
         }
 
         .row {
             display: flex;
-            margin: 7px 0;
-            font-size: 12px;
-            line-height: 1.4;
+            gap: 1mm;
+            line-height: 1.1;
         }
 
-        .label {
-            width: 105px;
-            font-weight: bold;
+        .info-column:first-child .label {
+            flex: 0 0 25mm;
+        }
+
+        .info-column:last-child .label {
+            flex: 0 0 27mm;
         }
 
         .value {
             flex: 1;
+            min-width: 0;
+            font-size: 7px;
+            font-weight: 600;
+            overflow-wrap: anywhere;
         }
 
         .amount-box {
-            margin-top: 15px;
-            border-top: 1px solid #000;
-            padding-top: 10px;
+            margin-top: auto;
+            border-top: 0.2mm solid #333;
+            padding-top: 1.5mm;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 2mm;
         }
 
         .total-label {
-            font-weight: bold;
-            font-size: 13px;
+            color: #222;
+            font-size: 8px;
+            font-style: italic;
+            font-weight: 700;
         }
 
         .amount {
-            font-size: 21px;
+            color: #111;
+            font-size: 12px;
             font-weight: bold;
         }
 
@@ -144,36 +166,38 @@ $stmt->close();
 
         .footer {
             text-align: center;
-            margin-top: 14px;
-            font-size: 9px;
-            line-height: 1.4;
+            margin-top: 1mm;
+            font-size: 6px;
+            line-height: 1.25;
+            color: #222;
         }
 
         .logo {
-            height: 80px;
+            display: inline-block;
+            max-width: 55mm;
+            max-height: 11mm;
+            object-fit: contain;
         }
 
         @media print {
+            html,
             body {
-                margin: 0;
-                padding: 0;
+                width: 297mm;
+                height: 210mm;
             }
 
-            .receipt {
-                width: 9.0in;
-                height: 3.8in;
-                margin: 0.15in;
-                padding: 0.25in 0.3in;
-                border: 1px solid #000;
+            .page {
+                width: 297mm;
+                height: 210mm;
             }
-
         }
     </style>
 </head>
 
 <body>
 
-    <div class="receipt">
+        <div class="page">
+            <div class="receipt">
 
         <div class="header">
             <img class="logo" src="../image/snnmmcs.png" alt="LOGO">
@@ -183,7 +207,7 @@ $stmt->close();
 
         <div class="info">
 
-            <div>
+            <div class="info-column">
                 <div class="row">
                     <div class="label">Reference No.:</div>
                     <div class="value">
@@ -214,7 +238,7 @@ $stmt->close();
 
             </div>
 
-            <div>
+            <div class="info-column">
 
                 <div class="row">
                     <div class="label">Payment Method:</div>
@@ -258,7 +282,8 @@ $stmt->close();
             Online Resibo © 2026
         </div>
 
-    </div>
+            </div>
+        </div>
 
     <script>
         window.onload = function () {

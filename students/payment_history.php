@@ -37,7 +37,8 @@ $stmt = $conn->prepare(
         p.amount,
         p.payment_date,
         p.payment_method,
-        p.status
+        p.status,
+        p.issued_by
      FROM payments p
      WHERE p.student_id = ?
      ORDER BY p.payment_date DESC, p.id DESC"

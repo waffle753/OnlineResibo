@@ -474,7 +474,7 @@ $result = $conn->query($sql);
         });
     </script>
 
-<script src="../assets/js/table-pagination.js"></script>
+<script src="../assets/js/table-pagination.js?v=2"></script>
 </body>
 
 </html>

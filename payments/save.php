@@ -13,6 +13,7 @@ if (!isset($_SESSION["user_id"])) {
 require_once "../config/database.php";
 require_once "send_receipt_email.php";
 
+$issuedBy = (string) ($_SESSION["fullname"] ?? "User");
 
 // =====================================================
 // CHECK REQUEST
@@ -227,10 +228,11 @@ $sql = "
         payment_date,
         payment_method,
         status,
-        reference_no
+        reference_no,
+        issued_by
     )
     VALUES
-    (?, ?, ?, ?, ?, ?, ?)
+    (?, ?, ?, ?, ?, ?, ?, ?)
 ";
 
 
@@ -251,14 +253,15 @@ if (!$stmt) {
 // =====================================================
 
 $stmt->bind_param(
-    "isdssss",
+    "isdsssss",
     $student_id,
     $payment_type,
     $amount,
     $payment_date,
     $payment_method,
     $status,
-    $reference_no
+    $reference_no,
+    $issuedBy
 );
 
 

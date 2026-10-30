@@ -209,7 +209,7 @@ $messages = [
             <div class="container-fluid">
                 <div class="card mb-4">
                     <div class="card-header" style="background: #0d6efd; border-bottom: 1px solid #0d6efd;">
-                        <h3 class="card-title text-white mb-0">Add Payment Type</h3>
+                        <h3 class="card-title text-white mb-0"><b>Add Payment Type</b></h3>
                     </div>
                     <form method="POST" action="index.php">
                         <input type="hidden" name="action" value="add">

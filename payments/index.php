@@ -41,6 +41,7 @@ $paymentsSql = "
         p.payment_method,
         p.status,
         p.reference_no,
+        p.issued_by,
         p.created_at,
         s.student_id AS student_number,
         CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name) AS fullname
@@ -478,6 +479,7 @@ $paymentsResult = $conn->query($paymentsSql);
                                 data-method="<?= htmlspecialchars($payment["payment_method"], ENT_QUOTES, "UTF-8") ?>"
                                 data-date="<?= htmlspecialchars($payment["payment_date"], ENT_QUOTES, "UTF-8") ?>"
                                 data-status="<?= htmlspecialchars($payment["status"], ENT_QUOTES, "UTF-8") ?>"
+                                data-issued-by="<?= htmlspecialchars($payment["issued_by"] ?? "", ENT_QUOTES, "UTF-8") ?>"
                                 data-created="<?= htmlspecialchars($payment["created_at"], ENT_QUOTES, "UTF-8") ?>"
                             >
                                 <i class="bi bi-eye"></i>
@@ -625,6 +627,11 @@ VIEW PAYMENT MODAL
                         <strong>Payment Date</strong>
                         <div id="view_date">
                         </div>
+                    </div>
+
+                    <div class="col-12 mb-3">
+                        <strong>Issued By</strong>
+                        <div id="view_issued_by"></div>
                     </div>
 
                     <div class="col-12 mb-3">
@@ -941,8 +948,18 @@ document.addEventListener("DOMContentLoaded", function() {
             document.getElementById("view_date").textContent =
                 this.dataset.date;
 
+            document.getElementById("view_issued_by").textContent =
+                this.dataset.issuedBy || "Not recorded";
+
+            const createdAt = new Date(this.dataset.created.replace(" ", "T"));
             document.getElementById("view_created").textContent =
-                this.dataset.created;
+                new Intl.DateTimeFormat("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit"
+                }).format(createdAt);
 
             const status = document.getElementById("view_status");
 

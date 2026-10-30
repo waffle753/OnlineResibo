@@ -21,6 +21,7 @@
         const pageSizeSelect = document.createElement("select");
         const navigation = document.createElement("nav");
         const pageList = document.createElement("ul");
+        const searchRow = searchInput ? searchInput.closest(".row") : null;
         let currentPage = 1;
         let pageSize = pageSizes[0];
         let matchingRows = rows;
@@ -42,7 +43,9 @@
         wrapper.className = "d-flex justify-content-between align-items-center flex-wrap gap-2 p-3 border-top";
         summary.className = "text-muted";
         summary.setAttribute("aria-live", "polite");
-        pageSizeControls.className = "d-flex align-items-center gap-2 ms-auto";
+        pageSizeControls.className = searchRow
+            ? "col-auto ms-auto d-flex align-items-center gap-2"
+            : "d-flex align-items-center gap-2 ms-auto";
         pageSizeLabel.className = "small text-muted mb-0";
         pageSizeLabel.textContent = "Rows per page";
         pageSizeSelect.className = "form-select form-select-sm w-auto";
@@ -65,8 +68,13 @@
 
         const tableContainer = table.closest(".table-responsive");
         const cardHeader = table.closest(".card").querySelector(".card-header");
-        cardHeader.classList.add("d-flex", "align-items-center", "flex-wrap", "gap-2");
-        cardHeader.appendChild(pageSizeControls);
+        if (searchRow) {
+            searchRow.classList.add("align-items-center");
+            searchRow.appendChild(pageSizeControls);
+        } else {
+            cardHeader.classList.add("d-flex", "align-items-center", "flex-wrap", "gap-2");
+            cardHeader.appendChild(pageSizeControls);
+        }
         tableContainer.insertAdjacentElement("afterend", wrapper);
 
         function addPageButton(label, page, options) {

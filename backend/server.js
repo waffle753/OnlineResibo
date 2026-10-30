@@ -35,9 +35,9 @@ function readPayment() {
 function createReceiptPdf(payment) {
     return new Promise((resolve, reject) => {
         const document = new PDFDocument({
-            size: "A5",
+            size: "A4",
             layout: "landscape",
-            margin: 42
+            margin: 0
         });
         const chunks = [];
 
@@ -46,71 +46,75 @@ function createReceiptPdf(payment) {
         document.on("end", () => resolve(Buffer.concat(chunks)));
 
         const pageWidth = document.page.width;
+        const receiptWidth = pageWidth / 2;
+        const receiptHeight = document.page.height / 4;
+        const contentPadding = 17;
+        const contentLeft = contentPadding;
+        const contentRight = receiptWidth - contentPadding;
+        const columnGap = 11.34;
+        const columnWidth = (contentRight - contentLeft - columnGap) / 2;
+        const detailStartY = 51;
+        const rowGap = 11;
+        const leftLabelWidth = 71;
+        const rightLabelWidth = 76.5;
+
+        document.lineWidth(0.6).rect(0, 0, receiptWidth, receiptHeight).stroke("#333333");
+
         const logoPath = path.join(__dirname, "..", "image", "snnmmcs.png");
         if (fs.existsSync(logoPath)) {
-            document.image(logoPath, (pageWidth - 76) / 2, 14, { fit: [76, 58] });
+            document.image(logoPath, (receiptWidth - 156) / 2, 5, { fit: [156, 31] });
         }
 
-        document.font("Helvetica-Bold").fontSize(20).text("PAYMENT RECEIPT", 42, 77, {
-            align: "center",
-            width: pageWidth - 84
-        });
-        document.font("Helvetica").fontSize(10).text("Online Resibo", 42, 101, {
-            align: "center",
-            width: pageWidth - 84
-        });
-
-        document.moveTo(42, 128).lineTo(pageWidth - 42, 128).stroke("#64748b");
-
-        const leftX = 48;
-        const rightX = pageWidth / 2 + 12;
-        const labelWidth = 112;
-        const rowStart = 145;
-        const rowGap = 30;
         const leftDetails = [
-            ["Reference No.", payment.reference_no],
-            ["Student ID", payment.student_id],
-            ["Student Name", payment.student_name],
-            ["Payment Type", payment.payment_type]
+            ["Reference No.:", payment.reference_no],
+            ["Student ID:", payment.student_id],
+            ["Student Name:", payment.student_name],
+            ["Payment Type:", payment.payment_type]
         ];
         const rightDetails = [
-            ["Payment Method", payment.payment_method],
-            ["Payment Date", payment.payment_date],
-            ["Status", payment.status]
+            ["Payment Method:", payment.payment_method],
+            ["Payment Date:", payment.payment_date],
+            ["Status:", payment.status]
         ];
 
-        function drawDetails(details, x) {
+        function drawDetails(details, x, labelWidth) {
             details.forEach(([label, value], index) => {
-                const y = rowStart + index * rowGap;
-                document.font("Helvetica-Bold").fontSize(10).text(`${label}:`, x, y, {
+                const y = detailStartY + index * rowGap;
+                document.font("Helvetica-BoldOblique").fontSize(7.5).text(label, x, y, {
                     width: labelWidth
                 });
-                document.font("Helvetica").text(String(value ?? ""), x + labelWidth, y, {
-                    width: pageWidth / 2 - labelWidth - 24
+                document.font("Helvetica").fontSize(7.5).text(String(value ?? ""), x + labelWidth, y, {
+                    width: columnWidth - labelWidth
                 });
             });
         }
 
-        drawDetails(leftDetails, leftX);
-        drawDetails(rightDetails, rightX);
+        document.moveTo(contentLeft, 43)
+            .lineTo(contentRight, 43)
+            .stroke("#333333");
 
-        const amountY = 255;
-        document.roundedRect(42, amountY, pageWidth - 84, 58, 7).fill("#eff6ff");
-        document.font("Helvetica-Bold").fontSize(12).fillColor("#1e3a8a")
-            .text("AMOUNT PAID", 58, amountY + 21);
-        document.font("Helvetica-Bold").fontSize(22).fillColor("#1d4ed8")
+        drawDetails(leftDetails, contentLeft, leftLabelWidth);
+        drawDetails(rightDetails, contentLeft + columnWidth + columnGap, rightLabelWidth);
+
+        document.moveTo(contentLeft, 100)
+            .lineTo(contentRight, 100)
+            .stroke("#333333");
+
+        document.font("Helvetica-BoldOblique").fontSize(8).fillColor("#222222")
+            .text("TOTAL AMOUNT:", contentLeft, 107);
+        document.font("Helvetica-Bold").fontSize(12).fillColor("#111111")
             .text(`PHP ${Number(payment.amount).toLocaleString("en-PH", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
-            })}`, 190, amountY + 15, {
-                width: pageWidth - 250,
+            })}`, contentLeft, 104, {
+                width: contentRight - contentLeft,
                 align: "right"
             });
 
-        document.fillColor("#000000").font("Helvetica").fontSize(9)
-            .text("Thank you for your payment.", 42, 330, {
+        document.fillColor("#222222").font("Helvetica").fontSize(6)
+            .text("Thank you for your payment.\nOnline Resibo © 2026", contentLeft, 125, {
                 align: "center",
-                width: pageWidth - 84
+                width: contentRight - contentLeft
             });
         document.end();
     });

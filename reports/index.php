@@ -13,6 +13,7 @@ $toDate = $_GET["to_date"] ?? "";
 $status = $_GET["status"] ?? "All";
 $departmentId = $_GET["department_id"] ?? "";
 $programId = $_GET["program_id"] ?? "";
+$paymentType = $_GET["payment_type"] ?? "";
 $export = $_GET["export"] ?? "";
 $pageInput = $_GET["page"] ?? "1";
 $pageSizeInput = $_GET["page_size"] ?? "10";
@@ -23,6 +24,7 @@ if (
     || !is_string($status)
     || !is_string($departmentId)
     || !is_string($programId)
+    || !is_string($paymentType)
     || !is_string($export)
     || !is_string($pageInput)
     || !is_string($pageSizeInput)
@@ -95,12 +97,24 @@ if (!$programsResult) {
 }
 $programs = $programsResult->fetch_all(MYSQLI_ASSOC);
 
+$paymentTypesResult = $conn->query("SELECT name FROM payment_types ORDER BY name ASC");
+if (!$paymentTypesResult) {
+    die("Unable to load payment types: " . $conn->error);
+}
+$paymentTypes = $paymentTypesResult->fetch_all(MYSQLI_ASSOC);
+$paymentTypeNames = array_column($paymentTypes, "name");
+if ($paymentType !== "" && !in_array($paymentType, $paymentTypeNames, true)) {
+    header("Location: index.php?report_error=invalid_payment_type");
+    exit();
+}
+
 $filterSql = "
     WHERE (? IS NULL OR p.payment_date >= ?)
       AND (? IS NULL OR p.payment_date <= ?)
       AND (? = 'All' OR p.status = ?)
       AND (? IS NULL OR s.department_id = ?)
       AND (? IS NULL OR s.program_id = ?)
+      AND (? = '' OR p.payment_type = ?)
 ";
 $fromDateFilter = $fromDate === "" ? null : $fromDate;
 $toDateFilter = $toDate === "" ? null : $toDate;
@@ -125,7 +139,7 @@ if (!$summaryStmt) {
 }
 
 $summaryStmt->bind_param(
-    "ssssssssss",
+    "ssssssssssss",
     $fromDateFilter,
     $fromDate,
     $toDateFilter,
@@ -135,7 +149,9 @@ $summaryStmt->bind_param(
     $departmentFilter,
     $departmentId,
     $programFilter,
-    $programId
+    $programId,
+    $paymentType,
+    $paymentType
 );
 
 if (!$summaryStmt->execute()) {
@@ -156,6 +172,7 @@ $paginationQuery = http_build_query([
     "status" => $status,
     "department_id" => $departmentId,
     "program_id" => $programId,
+    "payment_type" => $paymentType,
     "page_size" => $pageSize
 ]);
 
@@ -189,21 +206,7 @@ if (!$paymentsStmt) {
 
 if ($export === "csv") {
     $paymentsStmt->bind_param(
-        "ssssssssss",
-        $fromDateFilter,
-        $fromDate,
-        $toDateFilter,
-        $toDate,
-        $status,
-        $status,
-        $departmentFilter,
-        $departmentId,
-        $programFilter,
-        $programId
-    );
-} else {
-    $paymentsStmt->bind_param(
-        "ssssssssssii",
+        "ssssssssssss",
         $fromDateFilter,
         $fromDate,
         $toDateFilter,
@@ -214,6 +217,24 @@ if ($export === "csv") {
         $departmentId,
         $programFilter,
         $programId,
+        $paymentType,
+        $paymentType
+    );
+} else {
+    $paymentsStmt->bind_param(
+        "ssssssssssssii",
+        $fromDateFilter,
+        $fromDate,
+        $toDateFilter,
+        $toDate,
+        $status,
+        $status,
+        $departmentFilter,
+        $departmentId,
+        $programFilter,
+        $programId,
+        $paymentType,
+        $paymentType,
         $pageSize,
         $offset
     );
@@ -380,22 +401,22 @@ if ($export === "csv") {
             <div class="container-fluid">
                 <div class="card report-filters mb-4">
                     <div class="card-header" style="background: #0d6efd; border-bottom: 1px solid #0d6efd;">
-                        <h3 class="card-title text-white mb-0">Filter Report</h3>
+                        <h3 class="card-title text-white mb-0"><b>Filter Report</b></h3>
                     </div>
                     <div class="card-body">
                         <form method="GET" action="index.php">
                             <div class="row align-items-end">
-                                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+                                <div class="col-xl-4 col-lg-4 col-md-6 mb-3">
                                     <label for="from_date" class="form-label">From date</label>
                                     <input type="date" id="from_date" name="from_date" class="form-control"
                                         value="<?= htmlspecialchars($fromDate) ?>">
                                 </div>
-                                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+                                <div class="col-xl-4 col-lg-4 col-md-6 mb-3">
                                     <label for="to_date" class="form-label">To date</label>
                                     <input type="date" id="to_date" name="to_date" class="form-control"
                                         value="<?= htmlspecialchars($toDate) ?>">
                                 </div>
-                                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+                                <div class="col-xl-4 col-lg-4 col-md-6 mb-3">
                                     <label for="status" class="form-label">Payment status</label>
                                     <select id="status" name="status" class="form-select">
                                         <?php foreach (["All", "Paid", "Pending", "Cancelled"] as $statusOption): ?>
@@ -406,7 +427,19 @@ if ($export === "csv") {
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+                                <div class="col-xl-4 col-lg-4 col-md-6 mb-3">
+                                    <label for="payment_type" class="form-label">Payment type</label>
+                                    <select id="payment_type" name="payment_type" class="form-select">
+                                        <option value="">All payment types</option>
+                                        <?php foreach ($paymentTypes as $type): ?>
+                                            <option value="<?= htmlspecialchars($type["name"], ENT_QUOTES, "UTF-8") ?>"
+                                                <?= $paymentType === $type["name"] ? "selected" : "" ?>>
+                                                <?= htmlspecialchars($type["name"]) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-xl-4 col-lg-4 col-md-6 mb-3">
                                     <label for="department_id" class="form-label">Department</label>
                                     <select id="department_id" name="department_id" class="form-select">
                                         <option value="">All departments</option>
@@ -418,7 +451,7 @@ if ($export === "csv") {
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                                <div class="col-xl-2 col-lg-4 col-md-6 mb-3">
+                                <div class="col-xl-4 col-lg-4 col-md-6 mb-3">
                                     <label for="program_id" class="form-label">Program / Course</label>
                                     <select id="program_id" name="program_id" class="form-select">
                                         <option value="">All programs / courses</option>
@@ -430,8 +463,8 @@ if ($export === "csv") {
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                                <div class="col-xl-2 col-lg-4 col-md-6 mb-3 report-filter-actions d-flex flex-wrap gap-2">
-                                    <button type="submit" class="btn btn-primary flex-fill">
+                                <div class="col-xl-12 mb-3 report-filter-actions d-flex flex-wrap justify-content-end gap-2">
+                                    <button type="submit" class="btn btn-primary">
                                         <i class="bi bi-search"></i> Generate
                                     </button>
                                     <a href="index.php" class="btn btn-outline-secondary">Clear</a>
@@ -480,6 +513,7 @@ if ($export === "csv") {
                         <input type="hidden" name="from_date" value="<?= htmlspecialchars($fromDate) ?>">
                         <input type="hidden" name="to_date" value="<?= htmlspecialchars($toDate) ?>">
                         <input type="hidden" name="status" value="<?= htmlspecialchars($status) ?>">
+                        <input type="hidden" name="payment_type" value="<?= htmlspecialchars($paymentType) ?>">
                         <input type="hidden" name="department_id" value="<?= htmlspecialchars($departmentId) ?>">
                         <input type="hidden" name="program_id" value="<?= htmlspecialchars($programId) ?>">
                         <input type="hidden" name="page" value="1">
@@ -494,7 +528,7 @@ if ($export === "csv") {
                     </form>
                     <div class="report-actions d-flex" style="gap: 5px; margin-left: 0;">
                             <a class="btn btn-success btn-sm"
-                                href="?from_date=<?= urlencode($fromDate) ?>&amp;to_date=<?= urlencode($toDate) ?>&amp;status=<?= urlencode($status) ?>&amp;department_id=<?= urlencode($departmentId) ?>&amp;program_id=<?= urlencode($programId) ?>&amp;export=csv">
+                                href="?from_date=<?= urlencode($fromDate) ?>&amp;to_date=<?= urlencode($toDate) ?>&amp;status=<?= urlencode($status) ?>&amp;payment_type=<?= urlencode($paymentType) ?>&amp;department_id=<?= urlencode($departmentId) ?>&amp;program_id=<?= urlencode($programId) ?>&amp;export=csv">
                                 <i class="bi bi-download"></i> Export CSV
                             </a>
                             <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
@@ -604,6 +638,7 @@ const reportErrors = {
     invalid_dates: "Enter valid dates for the report.",
     date_order: "The start date cannot be after the end date.",
     invalid_status: "Choose a valid payment status.",
+    invalid_payment_type: "Choose a valid payment type.",
     invalid_export: "The requested report export format is not supported."
 };
 const reportError = new URLSearchParams(window.location.search).get("report_error");

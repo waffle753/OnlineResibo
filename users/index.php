@@ -393,6 +393,7 @@ $flashMessage = is_string($messageKey) ? ($messages[$messageKey] ?? null) : null
 </div>
 
 <script src="../assets/js/sweetalert2.all.min.js"></script>
+<script src="../adminlte/dist/js/adminlte.min.js"></script>
 <script src="../assets/js/bootstrap.bundle.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {

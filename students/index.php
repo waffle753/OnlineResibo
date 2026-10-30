@@ -981,13 +981,14 @@ $departments = $departmentsResult ? $departmentsResult->fetch_all(MYSQLI_ASSOC) 
                                     <th>Payment Type</th>
                                     <th>Amount</th>
                                     <th>Method</th>
+                                    <th>Issued By</th>
                                     <th>Date</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody id="studentPaymentHistoryRows">
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted py-4">Select a student to load payment history.</td>
+                                    <td colspan="8" class="text-center text-muted py-4">Select a student to load payment history.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1052,6 +1053,7 @@ $departments = $departmentsResult ? $departmentsResult->fetch_all(MYSQLI_ASSOC) 
                         payment.payment_type,
                         amountFormatter.format(Number(payment.amount)),
                         payment.payment_method,
+                        payment.issued_by || "Not recorded",
                         payment.payment_date
                     ];
 
@@ -1141,7 +1143,7 @@ $departments = $departmentsResult ? $departmentsResult->fetch_all(MYSQLI_ASSOC) 
 
                     const loadingRow = document.createElement("tr");
                     const loadingCell = document.createElement("td");
-                    loadingCell.colSpan = 7;
+                    loadingCell.colSpan = 8;
                     loadingCell.className = "text-center text-muted py-4";
                     loadingCell.textContent = "Loading payment history…";
                     loadingRow.appendChild(loadingCell);
@@ -1163,7 +1165,7 @@ $departments = $departmentsResult ? $departmentsResult->fetch_all(MYSQLI_ASSOC) 
                         if (result.payments.length === 0) {
                             const emptyRow = document.createElement("tr");
                             const emptyCell = document.createElement("td");
-                            emptyCell.colSpan = 7;
+                            emptyCell.colSpan = 8;
                             emptyCell.className = "text-center text-muted py-4";
                             emptyCell.textContent = "No payment history for this student.";
                             emptyRow.appendChild(emptyCell);
@@ -1180,7 +1182,7 @@ $departments = $departmentsResult ? $departmentsResult->fetch_all(MYSQLI_ASSOC) 
                         historyRows.replaceChildren();
                         const errorRow = document.createElement("tr");
                         const errorCell = document.createElement("td");
-                        errorCell.colSpan = 7;
+                        errorCell.colSpan = 8;
                         errorCell.className = "text-center text-danger py-4";
                         errorCell.textContent = error.message || "Unable to load payment history.";
                         errorRow.appendChild(errorCell);

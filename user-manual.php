@@ -115,6 +115,7 @@ if (!isset($_SESSION["user_id"])) {
                                 <div id="paymentsHelp" class="accordion-collapse collapse" data-bs-parent="#manualSections">
                                     <div class="accordion-body">
                                         <p>Create a payment by selecting the correct student and configured payment type, then entering the amount, payment method, date, and status. Check the student and amount before saving to avoid recording the payment against the wrong account.</p>
+                                        <p>The Payment Details view shows the name of the user who issued each payment. Payments created before issuer tracking was added show “Not recorded.”</p>
                                         <p>Enter a positive amount and choose a valid payment date, method, and status. Use <strong>Paid</strong> only after payment has been received; use <strong>Pending</strong> or <strong>Cancelled</strong> when appropriate.</p>
                                         <p>A receipt email is queued when a payment is first recorded as <strong>Paid</strong> or changes to Paid. Saving does not wait for email delivery. The student's saved email must be valid, and the server mail configuration must be working. A queued email can still fail later; that does not undo the payment. If the payment is saved but the email fails, notify an Admin to check the mail setup.</p>
                                     </div>
@@ -136,7 +137,7 @@ if (!isset($_SESSION["user_id"])) {
                                 </h2>
                                 <div id="reportsHelp" class="accordion-collapse collapse" data-bs-parent="#manualSections">
                                     <div class="accordion-body">
-                                        Filter payment reports by date, status, department, and course/program. Review the filters and results before using <strong>Export CSV</strong> to download matching transactions or <strong>Print</strong> to print the report. Report pagination changes the displayed page; CSV export includes all transactions matching the selected filters.
+                                        Filter payment reports by date, status, payment type, department, and course/program. Review the filters and results before using <strong>Export CSV</strong> to download matching transactions or <strong>Print</strong> to print the report. Report pagination changes the displayed page; CSV export includes all transactions matching the selected filters.
                                     </div>
                                 </div>
                             </div>
